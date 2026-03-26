@@ -30,7 +30,6 @@ void clear_screen() {
     cursor = 0;
 }
 
-// Backspace — erase last character
 void backspace() {
     if (cursor > 0) {
         cursor--;
@@ -39,8 +38,9 @@ void backspace() {
     }
 }
 
-// Declare keyboard functions from keyboard.c
+// Declare functions from other files
 char keyboard_read();
+void shell_handle_key(char c);
 
 // Kernel main
 void kernel_main() {
@@ -53,16 +53,20 @@ void kernel_main() {
     print_newline();
     print_string("> ", 0x0E);
 
-    // Input loop — runs forever
+    // Main loop
     while (1) {
         char c = keyboard_read();
+        if (c == 0) continue;
 
-        if (c == 0) continue;          // ignore unknown keys
-
-        if (c == '\b') {               // backspace
+        // Handle backspace on screen
+        if (c == '\b') {
             backspace();
-        } else {
-            print_char(c, 0x0F);       // print typed character
+        } else if (c != '\n') {
+            print_char(c, 0x0F);
         }
+
+        // Send key to shell for command processing
+        shell_handle_key(c);
     }
 }
+

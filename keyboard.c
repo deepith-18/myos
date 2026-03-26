@@ -36,6 +36,9 @@ char keyboard_read() {
     // Backspace scancode is 0x0E
     if (scancode == 0x0E) return '\b';
 
+    // Enter scancode is 0x1C
+    if (scancode == 0x1C) return '\n';
+
     // Return mapped character
     if (scancode < sizeof(scancode_map)) {
         return scancode_map[scancode];
