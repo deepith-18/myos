@@ -3,9 +3,12 @@ void print_string(char *str, unsigned char color);
 void print_newline();
 void clear_screen();
 
-// Buffer to store what user types
+// Input buffer
 char input_buffer[256];
 int buffer_pos = 0;
+
+// Current text color
+unsigned char current_color = 0x0F;
 
 // Compare two strings
 int str_compare(char *a, char *b) {
@@ -17,7 +20,17 @@ int str_compare(char *a, char *b) {
     return a[i] == b[i];
 }
 
-// Clear the input buffer
+// Check if string starts with prefix
+int str_starts_with(char *str, char *prefix) {
+    int i = 0;
+    while (prefix[i]) {
+        if (str[i] != prefix[i]) return 0;
+        i++;
+    }
+    return 1;
+}
+
+// Clear input buffer
 void buffer_clear() {
     int i = 0;
     while (i < 256) {
@@ -27,11 +40,34 @@ void buffer_clear() {
     buffer_pos = 0;
 }
 
-// Handle a complete command
+// Reboot the machine
+void reboot() {
+    // Send reboot signal via keyboard controller
+    unsigned char good = 0x02;
+    while (good & 0x02) {
+        __asm__("inb $0x64, %0" : "=a"(good));
+    }
+    __asm__("outb %0, $0x64" : : "a"((unsigned char)0xFE));
+}
+
+// Execute typed command
 void execute_command() {
+
     if (str_compare(input_buffer, "help")) {
         print_newline();
-        print_string("  Commands: help, clear, about", 0x0E);
+        print_string("  Commands:", 0x0E);
+        print_newline();
+        print_string("  help         show this list", 0x0F);
+        print_newline();
+        print_string("  about        about this OS", 0x0F);
+        print_newline();
+        print_string("  clear        clear the screen", 0x0F);
+        print_newline();
+        print_string("  reboot       restart the OS", 0x0F);
+        print_newline();
+        print_string("  echo <text>  print your text", 0x0F);
+        print_newline();
+        print_string("  color <n>    change text color", 0x0F);
         print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
@@ -46,9 +82,33 @@ void execute_command() {
         print_newline();
         print_string("  Version 0.1 - Learning OS Dev", 0x0B);
         print_newline();
+        print_string("  Day 9 - Shell with commands", 0x0B);
+        print_newline();
+
+    } else if (str_compare(input_buffer, "reboot")) {
+        print_newline();
+        print_string("  Rebooting...", 0x0C);
+        print_newline();
+        reboot();
+
+    } else if (str_starts_with(input_buffer, "echo ")) {
+        print_newline();
+        print_string("  ", 0x0F);
+        print_string(input_buffer + 5, current_color);
+        print_newline();
+
+    } else if (str_starts_with(input_buffer, "color ")) {
+        char code = input_buffer[6];
+        if (code == '1') { current_color = 0x0A; print_newline(); print_string("  Color: Green", 0x0A); }
+        else if (code == '2') { current_color = 0x0B; print_newline(); print_string("  Color: Cyan", 0x0B); }
+        else if (code == '3') { current_color = 0x0C; print_newline(); print_string("  Color: Red", 0x0C); }
+        else if (code == '4') { current_color = 0x0E; print_newline(); print_string("  Color: Yellow", 0x0E); }
+        else if (code == '5') { current_color = 0x0F; print_newline(); print_string("  Color: White", 0x0F); }
+        else { print_newline(); print_string("  Usage: color 1-5", 0x07); }
+        print_newline();
 
     } else if (input_buffer[0] == 0) {
-        // empty command, do nothing
+        // empty — do nothing
 
     } else {
         print_newline();
@@ -57,23 +117,18 @@ void execute_command() {
     }
 }
 
-// Handle one keypress from kernel
+// Handle one keypress
 void shell_handle_key(char c) {
     if (c == '\n') {
-        // Enter pressed — execute command
         execute_command();
         buffer_clear();
         print_string("> ", 0x0E);
-
     } else if (c == '\b') {
-        // Backspace — remove last char from buffer
         if (buffer_pos > 0) {
             buffer_pos--;
             input_buffer[buffer_pos] = 0;
         }
-
     } else {
-        // Normal character — add to buffer
         if (buffer_pos < 255) {
             input_buffer[buffer_pos] = c;
             buffer_pos++;
