@@ -8,7 +8,7 @@ int 0x10
 ; Load kernel from disk
 mov bx, 0x1000
 mov ah, 0x02
-mov al, 8
+mov al, 16
 mov ch, 0
 mov cl, 2
 mov dh, 0

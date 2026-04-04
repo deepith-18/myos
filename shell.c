@@ -1,6 +1,8 @@
 // Forward declarations from kernel.c
 void print_string(char *str, unsigned char color);
 void print_newline();
+void print_int(int num, unsigned char color);
+void print_hex(unsigned int num, unsigned char color);
 void clear_screen();
 
 // Input buffer
@@ -42,7 +44,6 @@ void buffer_clear() {
 
 // Reboot the machine
 void reboot() {
-    // Send reboot signal via keyboard controller
     unsigned char good = 0x02;
     while (good & 0x02) {
         __asm__("inb $0x64, %0" : "=a"(good));
@@ -69,6 +70,10 @@ void execute_command() {
         print_newline();
         print_string("  color <n>    change text color", 0x0F);
         print_newline();
+        print_string("  meminfo      show memory layout", 0x0F);
+        print_newline();
+        print_string("  version      show OS version", 0x0F);
+        print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -82,7 +87,36 @@ void execute_command() {
         print_newline();
         print_string("  Version 0.1 - Learning OS Dev", 0x0B);
         print_newline();
-        print_string("  Day 9 - Shell with commands", 0x0B);
+        print_string("  Day 10 - Numbers + Memory Info", 0x0B);
+        print_newline();
+
+    } else if (str_compare(input_buffer, "version")) {
+        print_newline();
+        print_string("  DeepithOS ", 0x0F);
+        print_string("v0.1", 0x0A);
+        print_newline();
+        print_string("  Build: Day 10", 0x07);
+        print_newline();
+        print_string("  Arch:  x86 32-bit Protected Mode", 0x07);
+        print_newline();
+        print_string("  Shell: 8 commands", 0x07);
+        print_newline();
+
+    } else if (str_compare(input_buffer, "meminfo")) {
+        print_newline();
+        print_string("  Memory Layout:", 0x0E);
+        print_newline();
+        print_string("  Bootloader : ", 0x0F);
+        print_hex(0x7C00, 0x0A);
+        print_newline();
+        print_string("  Kernel     : ", 0x0F);
+        print_hex(0x1000, 0x0A);
+        print_newline();
+        print_string("  Stack      : ", 0x0F);
+        print_hex(0x90000, 0x0A);
+        print_newline();
+        print_string("  Video RAM  : ", 0x0F);
+        print_hex(0xB8000, 0x0A);
         print_newline();
 
     } else if (str_compare(input_buffer, "reboot")) {

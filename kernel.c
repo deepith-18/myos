@@ -38,6 +38,48 @@ void backspace() {
     }
 }
 
+// Print an integer number
+void print_int(int num, unsigned char color) {
+    if (num == 0) {
+        print_char('0', color);
+        return;
+    }
+
+    char digits[12];
+    int i = 0;
+
+    // Handle negative numbers
+    if (num < 0) {
+        print_char('-', color);
+        num = -num;
+    }
+
+    // Extract digits in reverse
+    while (num > 0) {
+        digits[i] = '0' + (num % 10);
+        num = num / 10;
+        i++;
+    }
+
+    // Print digits in correct order
+    while (i > 0) {
+        i--;
+        print_char(digits[i], color);
+    }
+}
+
+// Print a hex number like 0xB8000
+void print_hex(unsigned int num, unsigned char color) {
+    char hex_chars[] = "0123456789ABCDEF";
+    print_string("0x", color);
+
+    int i;
+    for (i = 7; i >= 0; i--) {
+        unsigned int nibble = (num >> (i * 4)) & 0xF;
+        print_char(hex_chars[nibble], color);
+    }
+}
+
 // Declare functions from other files
 char keyboard_read();
 void shell_handle_key(char c);
@@ -53,20 +95,16 @@ void kernel_main() {
     print_newline();
     print_string("> ", 0x0E);
 
-    // Main loop
     while (1) {
         char c = keyboard_read();
         if (c == 0) continue;
 
-        // Handle backspace on screen
         if (c == '\b') {
             backspace();
         } else if (c != '\n') {
             print_char(c, 0x0F);
         }
 
-        // Send key to shell for command processing
         shell_handle_key(c);
     }
 }
-
