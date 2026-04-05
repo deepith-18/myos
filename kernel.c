@@ -83,9 +83,11 @@ void print_hex(unsigned int num, unsigned char color) {
 // Declare functions from other files
 char keyboard_read();
 void shell_handle_key(char c);
+void idt_init();
 
 // Kernel main
 void kernel_main() {
+    idt_init();    
     clear_screen();
 
     print_string("DeepithOS v0.1", 0x0B);
