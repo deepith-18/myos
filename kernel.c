@@ -97,7 +97,7 @@ void kernel_main() {
     print_newline();
     print_string("> ", 0x0E);
 
-    while (1) {
+while (1) {
         char c = keyboard_read();
         if (c == 0) continue;
 
