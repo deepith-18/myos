@@ -5,6 +5,9 @@ void print_int(int num, unsigned char color);
 void print_hex(unsigned int num, unsigned char color);
 void clear_screen();
 
+// Timer
+unsigned int timer_seconds();
+
 // Input buffer
 char input_buffer[256];
 int buffer_pos = 0;
@@ -74,6 +77,8 @@ void execute_command() {
         print_newline();
         print_string("  version      show OS version", 0x0F);
         print_newline();
+        print_string("  uptime       show seconds running", 0x0F);
+        print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -87,7 +92,7 @@ void execute_command() {
         print_newline();
         print_string("  Version 0.1 - Learning OS Dev", 0x0B);
         print_newline();
-        print_string("  Day 10 - Numbers + Memory Info", 0x0B);
+        print_string("  Day 13 - Timer + Uptime", 0x0B);
         print_newline();
 
     } else if (str_compare(input_buffer, "version")) {
@@ -95,11 +100,11 @@ void execute_command() {
         print_string("  DeepithOS ", 0x0F);
         print_string("v0.1", 0x0A);
         print_newline();
-        print_string("  Build: Day 10", 0x07);
+        print_string("  Build: Day 13", 0x07);
         print_newline();
         print_string("  Arch:  x86 32-bit Protected Mode", 0x07);
         print_newline();
-        print_string("  Shell: 8 commands", 0x07);
+        print_string("  Shell: 9 commands", 0x07);
         print_newline();
 
     } else if (str_compare(input_buffer, "meminfo")) {
@@ -117,6 +122,13 @@ void execute_command() {
         print_newline();
         print_string("  Video RAM  : ", 0x0F);
         print_hex(0xB8000, 0x0A);
+        print_newline();
+
+    } else if (str_compare(input_buffer, "uptime")) {
+        print_newline();
+        print_string("  Uptime: ", 0x0F);
+        print_int(timer_seconds(), 0x0A);
+        print_string(" seconds", 0x0F);
         print_newline();
 
     } else if (str_compare(input_buffer, "reboot")) {

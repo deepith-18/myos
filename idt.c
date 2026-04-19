@@ -31,7 +31,7 @@ void print_newline();
 
 // Keyboard handler from keyboard.c
 void keyboard_handler();
-
+void timer_handler();
 // ISR and IRQ handler declarations
 void isr0();
 void isr1();
@@ -58,11 +58,8 @@ void isr_handler(int num) {
 
 // Hardware IRQ handler (called from idt.asm)
 void irq_handler(int num) {
-    if (num == 33) {
-        // IRQ1 = keyboard
-        keyboard_handler();
-    }
-    // Send End Of Interrupt to PIC
+    if (num == 32) timer_handler();
+    if (num == 33) keyboard_handler();
     pic_eoi();
 }
 
