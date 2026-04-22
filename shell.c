@@ -1,4 +1,7 @@
 // Forward declarations from kernel.c
+void mem_stats(unsigned int *free_bytes, unsigned int *used_bytes);
+void *kmalloc(unsigned int size);
+void kfree(void *ptr);
 void print_string(char *str, unsigned char color);
 void print_newline();
 void print_int(int num, unsigned char color);
@@ -107,7 +110,7 @@ void execute_command() {
         print_string("  Shell: 9 commands", 0x07);
         print_newline();
 
-    } else if (str_compare(input_buffer, "meminfo")) {
+} else if (str_compare(input_buffer, "meminfo")) {
         print_newline();
         print_string("  Memory Layout:", 0x0E);
         print_newline();
@@ -122,6 +125,19 @@ void execute_command() {
         print_newline();
         print_string("  Video RAM  : ", 0x0F);
         print_hex(0xB8000, 0x0A);
+        print_newline();
+        print_string("  Heap Start : ", 0x0F);
+        print_hex(0x200000, 0x0A);
+        print_newline();
+        unsigned int f = 0, u = 0;
+        mem_stats(&f, &u);
+        print_string("  Heap Free  : ", 0x0F);
+        print_int(f, 0x0A);
+        print_string(" bytes", 0x0F);
+        print_newline();
+        print_string("  Heap Used  : ", 0x0F);
+        print_int(u, 0x0C);
+        print_string(" bytes", 0x0F);
         print_newline();
 
     } else if (str_compare(input_buffer, "uptime")) {
