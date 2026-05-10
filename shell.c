@@ -1,21 +1,22 @@
-// Forward declarations from kernel.c
-void mem_stats(unsigned int *free_bytes, unsigned int *used_bytes);
-void *kmalloc(unsigned int size);
-void kfree(void *ptr);
+// Filesystem declarations
+int fs_create(char *name);
+int fs_write(char *name, char *data);
+char *fs_read(char *name);
+struct file { char name[16]; char data[256]; unsigned int size; unsigned int used; };
+struct file *fs_get(int index);
+
+// Kernel declarations
 void print_string(char *str, unsigned char color);
 void print_newline();
 void print_int(int num, unsigned char color);
 void print_hex(unsigned int num, unsigned char color);
 void clear_screen();
-
-// Timer
+void mem_stats(unsigned int *free_bytes, unsigned int *used_bytes);
 unsigned int timer_seconds();
 
 // Input buffer
 char input_buffer[256];
 int buffer_pos = 0;
-
-// Current text color
 unsigned char current_color = 0x0F;
 
 // Compare two strings
@@ -48,7 +49,7 @@ void buffer_clear() {
     buffer_pos = 0;
 }
 
-// Reboot the machine
+// Reboot
 void reboot() {
     unsigned char good = 0x02;
     while (good & 0x02) {
@@ -64,23 +65,31 @@ void execute_command() {
         print_newline();
         print_string("  Commands:", 0x0E);
         print_newline();
-        print_string("  help         show this list", 0x0F);
+        print_string("  help          show this list", 0x0F);
         print_newline();
-        print_string("  about        about this OS", 0x0F);
+        print_string("  about         about this OS", 0x0F);
         print_newline();
-        print_string("  clear        clear the screen", 0x0F);
+        print_string("  clear         clear the screen", 0x0F);
         print_newline();
-        print_string("  reboot       restart the OS", 0x0F);
+        print_string("  reboot        restart the OS", 0x0F);
         print_newline();
-        print_string("  echo <text>  print your text", 0x0F);
+        print_string("  echo <text>   print your text", 0x0F);
         print_newline();
-        print_string("  color <n>    change text color", 0x0F);
+        print_string("  color <n>     change text color", 0x0F);
         print_newline();
-        print_string("  meminfo      show memory layout", 0x0F);
+        print_string("  meminfo       show memory layout", 0x0F);
         print_newline();
-        print_string("  version      show OS version", 0x0F);
+        print_string("  version       show OS version", 0x0F);
         print_newline();
-        print_string("  uptime       show seconds running", 0x0F);
+        print_string("  uptime        show seconds running", 0x0F);
+        print_newline();
+        print_string("  ls            list all files", 0x0F);
+        print_newline();
+        print_string("  create <n>    create a file", 0x0F);
+        print_newline();
+        print_string("  write <n> <t> write to file", 0x0F);
+        print_newline();
+        print_string("  read <n>      read a file", 0x0F);
         print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
@@ -95,22 +104,21 @@ void execute_command() {
         print_newline();
         print_string("  Version 0.1 - Learning OS Dev", 0x0B);
         print_newline();
-        print_string("  Day 13 - Timer + Uptime", 0x0B);
+        print_string("  Day 15 - Filesystem", 0x0B);
         print_newline();
 
     } else if (str_compare(input_buffer, "version")) {
         print_newline();
-        print_string("  DeepithOS ", 0x0F);
-        print_string("v0.1", 0x0A);
+        print_string("  DeepithOS v0.1", 0x0A);
         print_newline();
-        print_string("  Build: Day 13", 0x07);
+        print_string("  Build: Day 15", 0x07);
         print_newline();
         print_string("  Arch:  x86 32-bit Protected Mode", 0x07);
         print_newline();
-        print_string("  Shell: 9 commands", 0x07);
+        print_string("  Shell: 13 commands", 0x07);
         print_newline();
 
-} else if (str_compare(input_buffer, "meminfo")) {
+    } else if (str_compare(input_buffer, "meminfo")) {
         print_newline();
         print_string("  Memory Layout:", 0x0E);
         print_newline();
@@ -167,6 +175,70 @@ void execute_command() {
         else if (code == '4') { current_color = 0x0E; print_newline(); print_string("  Color: Yellow", 0x0E); }
         else if (code == '5') { current_color = 0x0F; print_newline(); print_string("  Color: White", 0x0F); }
         else { print_newline(); print_string("  Usage: color 1-5", 0x07); }
+        print_newline();
+
+    } else if (str_compare(input_buffer, "ls")) {
+        print_newline();
+        print_string("  Files:", 0x0E);
+        print_newline();
+        int i = 0;
+        int found = 0;
+        while (i < 16) {
+            struct file *f = fs_get(i);
+            if (f->used) {
+                print_string("  - ", 0x0F);
+                print_string(f->name, 0x0A);
+                print_string(" (", 0x07);
+                print_int(f->size, 0x07);
+                print_string(" bytes)", 0x07);
+                print_newline();
+                found++;
+            }
+            i++;
+        }
+        if (!found) { print_string("  No files yet", 0x07); print_newline(); }
+
+    } else if (str_starts_with(input_buffer, "create ")) {
+        char *name = input_buffer + 7;
+        int result = fs_create(name);
+        print_newline();
+        if (result >= 0) {
+            print_string("  File created: ", 0x0A);
+            print_string(name, 0x0A);
+        } else if (result == -1) {
+            print_string("  Error: file already exists", 0x0C);
+        } else {
+            print_string("  Error: filesystem full", 0x0C);
+        }
+        print_newline();
+
+    } else if (str_starts_with(input_buffer, "write ")) {
+        char *rest = input_buffer + 6;
+        int i = 0;
+        while (rest[i] && rest[i] != ' ') i++;
+        rest[i] = 0;
+        char *name = rest;
+        char *data = rest + i + 1;
+        int result = fs_write(name, data);
+        print_newline();
+        if (result == 0) {
+            print_string("  Written to: ", 0x0A);
+            print_string(name, 0x0A);
+        } else {
+            print_string("  Error: file not found", 0x0C);
+        }
+        print_newline();
+
+    } else if (str_starts_with(input_buffer, "read ")) {
+        char *name = input_buffer + 5;
+        char *data = fs_read(name);
+        print_newline();
+        if (data) {
+            print_string("  ", 0x0F);
+            print_string(data, 0x0B);
+        } else {
+            print_string("  Error: file not found", 0x0C);
+        }
         print_newline();
 
     } else if (input_buffer[0] == 0) {
