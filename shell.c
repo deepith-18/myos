@@ -2,6 +2,9 @@
 int fs_create(char *name);
 int fs_write(char *name, char *data);
 char *fs_read(char *name);
+int fs_delete(char *name);
+int fs_append(char *name, char *data);
+int fs_rename(char *old_name, char *new_name);
 struct file { char name[16]; char data[256]; unsigned int size; unsigned int used; };
 struct file *fs_get(int index);
 
@@ -90,6 +93,12 @@ void execute_command() {
         print_string("  write <n> <t> write to file", 0x0F);
         print_newline();
         print_string("  read <n>      read a file", 0x0F);
+        print_newline();
+        print_string("  rm <name>       delete a file", 0x0F);
+        print_newline();
+        print_string("  append <n> <t>  append to file", 0x0F);
+        print_newline();
+        print_string("  rename <o> <n>  rename a file", 0x0F);
         print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
@@ -241,7 +250,55 @@ void execute_command() {
         }
         print_newline();
 
-    } else if (input_buffer[0] == 0) {
+    } else if (str_starts_with(input_buffer, "rm ")) {
+        char *name = input_buffer + 3;
+        int result = fs_delete(name);
+        print_newline();
+        if (result == 0) {
+            print_string("  Deleted: ", 0x0A);
+            print_string(name, 0x0A);
+        } else {
+            print_string("  Error: file not found", 0x0C);
+        }
+        print_newline();
+
+    } else if (str_starts_with(input_buffer, "append ")) {
+        char *rest = input_buffer + 7;
+        int i = 0;
+        while (rest[i] && rest[i] != ' ') i++;
+        rest[i] = 0;
+        char *name = rest;
+        char *data = rest + i + 1;
+        int result = fs_append(name, data);
+        print_newline();
+        if (result == 0) {
+            print_string("  Appended to: ", 0x0A);
+            print_string(name, 0x0A);
+        } else {
+            print_string("  Error: file not found", 0x0C);
+        }
+        print_newline();
+
+    } else if (str_starts_with(input_buffer, "rename ")) {
+        char *rest = input_buffer + 7;
+        int i = 0;
+        while (rest[i] && rest[i] != ' ') i++;
+        rest[i] = 0;
+        char *old_name = rest;
+        char *new_name = rest + i + 1;
+        int result = fs_rename(old_name, new_name);
+        print_newline();
+        if (result == 0) {
+            print_string("  Renamed to: ", 0x0A);
+            print_string(new_name, 0x0A);
+        } else if (result == -2) {
+            print_string("  Error: name already taken", 0x0C);
+        } else {
+            print_string("  Error: file not found", 0x0C);
+        }
+        print_newline();
+        
+    }else if (input_buffer[0] == 0) {
         // empty — do nothing
 
     } else {
