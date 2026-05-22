@@ -1,4 +1,4 @@
-# DeepithOS 🖥️
+# DOS 🖥️
 
 A minimal operating system built from scratch using Assembly and C.  
 Built day by day as a learning project — from raw bootloader to a working 32-bit kernel.
