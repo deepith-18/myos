@@ -86,12 +86,14 @@ void shell_handle_key(char c);
 void idt_init();
 void mem_init();
 void fs_init();
+void proc_init();
 
 // Kernel main
 void kernel_main() {
     idt_init(); 
     mem_init(); 
-    fs_init();  
+    fs_init();
+    proc_init();   
     clear_screen();
 
     print_string("DeepithOS v0.1", 0x0B);
