@@ -1,3 +1,10 @@
+// System info
+char *cpu_get_vendor();
+unsigned int cpu_get_family();
+unsigned int cpu_get_model();
+int proc_count();
+unsigned int timer_get_ticks();
+
 // Process manager
 int proc_spawn(char *name);
 int proc_kill(unsigned int pid);
@@ -85,6 +92,8 @@ void execute_command() {
         print_string("  ps             list processes", 0x0F); print_newline();
         print_string("  spawn <name>   create process", 0x0F); print_newline();
         print_string("  kill <pid>     kill process", 0x0F); print_newline();
+        print_string("  sysinfo        full system info", 0x0F);
+        print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -275,7 +284,44 @@ void execute_command() {
         else { print_string("  Error: process not found", 0x0C); }
         print_newline();
 
-    } else if (input_buffer[0] == 0) {
+    } else if (str_compare(input_buffer, "sysinfo")) {
+        print_newline();
+        print_string("  DeepithOS System Information", 0x0E);
+        print_newline();
+        print_string("  ─────────────────────────────", 0x07);
+        print_newline();
+        print_string("  OS      : DeepithOS v0.1", 0x0F);
+        print_newline();
+        print_string("  Arch    : x86 32-bit Protected Mode", 0x0F);
+        print_newline();
+        print_string("  CPU     : ", 0x0F);
+        print_string(cpu_get_vendor(), 0x0A);
+        print_newline();
+        print_string("  Family  : ", 0x0F);
+        print_int(cpu_get_family(), 0x0A);
+        print_string("  Model: ", 0x0F);
+        print_int(cpu_get_model(), 0x0A);
+        print_newline();
+        print_string("  Uptime  : ", 0x0F);
+        print_int(timer_seconds(), 0x0A);
+        print_string(" seconds", 0x0F);
+        print_newline();
+        print_string("  Procs   : ", 0x0F);
+        print_int(proc_count(), 0x0A);
+        print_string(" running", 0x0F);
+        print_newline();
+        unsigned int f = 0, u = 0;
+        mem_stats(&f, &u);
+        print_string("  Heap    : ", 0x0F);
+        print_int(f, 0x0A);
+        print_string(" free / ", 0x0F);
+        print_int(u, 0x0C);
+        print_string(" used", 0x0F);
+        print_newline();
+        print_string("  ─────────────────────────────", 0x07);
+        print_newline();
+    
+    }else if (input_buffer[0] == 0) {
         // empty
 
     } else {

@@ -87,6 +87,7 @@ void idt_init();
 void mem_init();
 void fs_init();
 void proc_init();
+void cpu_detect();
 
 // Kernel main
 void kernel_main() {
@@ -94,6 +95,7 @@ void kernel_main() {
     mem_init(); 
     fs_init();
     proc_init();   
+    cpu_detect();  
     clear_screen();
 
     print_string("DeepithOS v0.1", 0x0B);
