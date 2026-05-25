@@ -1,4 +1,3 @@
-// VGA text mode memory address
 unsigned char *vga = (unsigned char *)0xB8000;
 int cursor = 0;
 
@@ -16,8 +15,27 @@ void print_string(char *str, unsigned char color) {
     }
 }
 
+void scroll() {
+    int i = 0;
+    while (i < 80 * 24) {
+        vga[i * 2]     = vga[(i + 80) * 2];
+        vga[i * 2 + 1] = vga[(i + 80) * 2 + 1];
+        i++;
+    }
+    int j = 80 * 24;
+    while (j < 80 * 25) {
+        vga[j * 2]     = ' ';
+        vga[j * 2 + 1] = 0x0F;
+        j++;
+    }
+    cursor = 80 * 24;
+}
+
 void print_newline() {
     cursor = cursor + (80 - (cursor % 80));
+    if (cursor >= 80 * 25) {
+        scroll();
+    }
 }
 
 void clear_screen() {
@@ -38,41 +56,18 @@ void backspace() {
     }
 }
 
-// Print an integer number
 void print_int(int num, unsigned char color) {
-    if (num == 0) {
-        print_char('0', color);
-        return;
-    }
-
+    if (num == 0) { print_char('0', color); return; }
     char digits[12];
     int i = 0;
-
-    // Handle negative numbers
-    if (num < 0) {
-        print_char('-', color);
-        num = -num;
-    }
-
-    // Extract digits in reverse
-    while (num > 0) {
-        digits[i] = '0' + (num % 10);
-        num = num / 10;
-        i++;
-    }
-
-    // Print digits in correct order
-    while (i > 0) {
-        i--;
-        print_char(digits[i], color);
-    }
+    if (num < 0) { print_char('-', color); num = -num; }
+    while (num > 0) { digits[i] = '0' + (num % 10); num = num / 10; i++; }
+    while (i > 0) { i--; print_char(digits[i], color); }
 }
 
-// Print a hex number like 0xB8000
 void print_hex(unsigned int num, unsigned char color) {
     char hex_chars[] = "0123456789ABCDEF";
     print_string("0x", color);
-
     int i;
     for (i = 7; i >= 0; i--) {
         unsigned int nibble = (num >> (i * 4)) & 0xF;
@@ -80,7 +75,6 @@ void print_hex(unsigned int num, unsigned char color) {
     }
 }
 
-// Declare functions from other files
 char keyboard_read();
 void shell_handle_key(char c);
 void idt_init();
@@ -89,32 +83,37 @@ void fs_init();
 void proc_init();
 void cpu_detect();
 
-// Kernel main
 void kernel_main() {
-    idt_init(); 
-    mem_init(); 
+    idt_init();
+    mem_init();
     fs_init();
-    proc_init();   
-    cpu_detect();  
+    proc_init();
+    cpu_detect();
     clear_screen();
 
-    print_string("DeepithOS v0.1", 0x0B);
+    print_string("================================================================================", 0x08);
     print_newline();
-    print_string("Kernel Loaded Successfully!", 0x0A);
+    print_string("              Welcome to DeepithOS v0.1 - Built by Deepith                    ", 0x0B);
+    print_newline();
+    print_string("              x86 32-bit Protected Mode Kernel                                 ", 0x0A);
+    print_newline();
+    print_string("================================================================================", 0x08);
+    print_newline();
+    print_string(" Type 'help' to see all commands", 0x0E);
+    print_newline();
+    print_string("================================================================================", 0x08);
     print_newline();
     print_newline();
     print_string("> ", 0x0E);
 
-while (1) {
+    while (1) {
         char c = keyboard_read();
         if (c == 0) continue;
-
         if (c == '\b') {
             backspace();
         } else if (c != '\n') {
             print_char(c, 0x0F);
         }
-
         shell_handle_key(c);
     }
 }
