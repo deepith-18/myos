@@ -1,10 +1,33 @@
 unsigned char *vga = (unsigned char *)0xB8000;
 int cursor = 0;
 
+// Write to VGA port
+void vga_port_write(unsigned short port, unsigned char data) {
+    __asm__("outb %0, %1" : : "a"(data), "Nd"(port));
+}
+
+// Update hardware cursor position
+void update_cursor() {
+    unsigned short pos = cursor;
+    vga_port_write(0x3D4, 0x0F);
+    vga_port_write(0x3D5, (unsigned char)(pos & 0xFF));
+    vga_port_write(0x3D4, 0x0E);
+    vga_port_write(0x3D5, (unsigned char)((pos >> 8) & 0xFF));
+}
+
+// Enable blinking cursor
+void cursor_enable() {
+    vga_port_write(0x3D4, 0x0A);
+    vga_port_write(0x3D5, (0 & 0xC0) | 13);
+    vga_port_write(0x3D4, 0x0B);
+    vga_port_write(0x3D5, (0 & 0xE0) | 15);
+}
+
 void print_char(char c, unsigned char color) {
     vga[cursor * 2]     = c;
     vga[cursor * 2 + 1] = color;
     cursor++;
+    update_cursor();
 }
 
 void print_string(char *str, unsigned char color) {
@@ -29,6 +52,7 @@ void scroll() {
         j++;
     }
     cursor = 80 * 24;
+    update_cursor();
 }
 
 void print_newline() {
@@ -36,6 +60,7 @@ void print_newline() {
     if (cursor >= 80 * 25) {
         scroll();
     }
+    update_cursor();
 }
 
 void clear_screen() {
@@ -46,6 +71,7 @@ void clear_screen() {
         i++;
     }
     cursor = 0;
+    update_cursor();
 }
 
 void backspace() {
@@ -53,6 +79,7 @@ void backspace() {
         cursor--;
         vga[cursor * 2]     = ' ';
         vga[cursor * 2 + 1] = 0x0F;
+        update_cursor();
     }
 }
 
@@ -89,13 +116,14 @@ void kernel_main() {
     fs_init();
     proc_init();
     cpu_detect();
+    cursor_enable();
     clear_screen();
 
     print_string("================================================================================", 0x08);
     print_newline();
-    print_string("              Welcome to DeepithOS v0.1 - Built by Deepith                    ", 0x0B);
+    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
     print_newline();
-    print_string("              x86 32-bit Protected Mode Kernel                                 ", 0x0A);
+    print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
     print_newline();
     print_string("================================================================================", 0x08);
     print_newline();
