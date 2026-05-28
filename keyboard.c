@@ -25,8 +25,21 @@ char keyboard_read() {
 
     unsigned char scancode = port_read(KEYBOARD_PORT);
     if (scancode & 0x80) return 0;
+
+    // Backspace
     if (scancode == 0x0E) return '\b';
+
+    // Enter
     if (scancode == 0x1C) return '\n';
+
+    // Tab
+    if (scancode == 0x0F) return '\t';
+
+    // Up arrow → return special code 0x01
+    if (scancode == 0x48) return 0x01;
+
+    // Down arrow → return special code 0x02
+    if (scancode == 0x50) return 0x02;
 
     if (scancode < sizeof(scancode_map)) {
         return scancode_map[scancode];

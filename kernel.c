@@ -134,14 +134,18 @@ void kernel_main() {
     print_newline();
     print_string("> ", 0x0E);
 
-    while (1) {
+  while (1) {
         char c = keyboard_read();
         if (c == 0) continue;
+
         if (c == '\b') {
             backspace();
+        } else if (c == '\t' || c == 0x01 || c == 0x02) {
+            // Tab and arrow keys handled by shell only
         } else if (c != '\n') {
             print_char(c, 0x0F);
         }
+
         shell_handle_key(c);
     }
 }

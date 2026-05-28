@@ -23,10 +23,12 @@ struct file *fs_get(int index);
 
 // Kernel declarations
 void print_string(char *str, unsigned char color);
+void print_char(char c, unsigned char color);
 void print_newline();
 void print_int(int num, unsigned char color);
 void print_hex(unsigned int num, unsigned char color);
 void clear_screen();
+void backspace();
 void mem_stats(unsigned int *free_bytes, unsigned int *used_bytes);
 unsigned int timer_seconds();
 
@@ -34,6 +36,11 @@ unsigned int timer_seconds();
 char input_buffer[256];
 int buffer_pos = 0;
 unsigned char current_color = 0x0F;
+
+// Command history
+char history[8][256];
+int history_count = 0;
+int history_index = -1;
 
 int str_compare(char *a, char *b) {
     int i = 0;
@@ -59,6 +66,32 @@ void buffer_clear() {
     buffer_pos = 0;
 }
 
+void history_add() {
+    if (input_buffer[0] == 0) return;
+    int i = 0;
+    while (i < 256) {
+        history[history_count % 8][i] = input_buffer[i];
+        i++;
+    }
+    history_count++;
+    history_index = -1;
+}
+
+void line_replace(char *text) {
+    while (buffer_pos > 0) {
+        backspace();
+        buffer_pos--;
+    }
+    buffer_clear();
+    int i = 0;
+    while (text[i]) {
+        print_char(text[i], 0x0F);
+        input_buffer[i] = text[i];
+        i++;
+    }
+    buffer_pos = i;
+}
+
 void reboot() {
     unsigned char good = 0x02;
     while (good & 0x02) {
@@ -71,14 +104,13 @@ void execute_command() {
 
     if (str_compare(input_buffer, "help")) {
         print_newline();
-        print_string("  Commands:", 0x0E);
-        print_newline();
+        print_string("  Commands:", 0x0E); print_newline();
         print_string("  help           show this list", 0x0F); print_newline();
         print_string("  about          about this OS", 0x0F); print_newline();
         print_string("  clear          clear screen", 0x0F); print_newline();
         print_string("  reboot         restart OS", 0x0F); print_newline();
         print_string("  echo <text>    print text", 0x0F); print_newline();
-        print_string("  color <n>      change color", 0x0F); print_newline();
+        print_string("  color <n>      change color 1-5", 0x0F); print_newline();
         print_string("  meminfo        memory layout", 0x0F); print_newline();
         print_string("  version        OS version", 0x0F); print_newline();
         print_string("  uptime         seconds running", 0x0F); print_newline();
@@ -92,8 +124,7 @@ void execute_command() {
         print_string("  ps             list processes", 0x0F); print_newline();
         print_string("  spawn <name>   create process", 0x0F); print_newline();
         print_string("  kill <pid>     kill process", 0x0F); print_newline();
-        print_string("  sysinfo        full system info", 0x0F);
-        print_newline();
+        print_string("  sysinfo        full system info", 0x0F); print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -105,14 +136,14 @@ void execute_command() {
         print_newline();
         print_string("  DeepithOS - Built by Deepith", 0x0B); print_newline();
         print_string("  Version 0.1 - Learning OS Dev", 0x0B); print_newline();
-        print_string("  Day 17 - Process Manager", 0x0B); print_newline();
+        print_string("  Day 21 - Tab + History", 0x0B); print_newline();
 
     } else if (str_compare(input_buffer, "version")) {
         print_newline();
         print_string("  DeepithOS v0.1", 0x0A); print_newline();
-        print_string("  Build: Day 17", 0x07); print_newline();
+        print_string("  Build: Day 21", 0x07); print_newline();
         print_string("  Arch:  x86 32-bit Protected Mode", 0x07); print_newline();
-        print_string("  Shell: 19 commands", 0x07); print_newline();
+        print_string("  Shell: 20 commands", 0x07); print_newline();
 
     } else if (str_compare(input_buffer, "meminfo")) {
         print_newline();
@@ -286,42 +317,32 @@ void execute_command() {
 
     } else if (str_compare(input_buffer, "sysinfo")) {
         print_newline();
-        print_string("  DeepithOS System Information", 0x0E);
-        print_newline();
-        print_string("  ─────────────────────────────", 0x07);
-        print_newline();
-        print_string("  OS      : DeepithOS v0.1", 0x0F);
-        print_newline();
-        print_string("  Arch    : x86 32-bit Protected Mode", 0x0F);
-        print_newline();
+        print_string("  DeepithOS System Information", 0x0E); print_newline();
+        print_string("  =============================", 0x07); print_newline();
+        print_string("  OS      : DeepithOS v0.1", 0x0F); print_newline();
+        print_string("  Arch    : x86 32-bit Protected Mode", 0x0F); print_newline();
         print_string("  CPU     : ", 0x0F);
-        print_string(cpu_get_vendor(), 0x0A);
-        print_newline();
+        print_string(cpu_get_vendor(), 0x0A); print_newline();
         print_string("  Family  : ", 0x0F);
         print_int(cpu_get_family(), 0x0A);
         print_string("  Model: ", 0x0F);
-        print_int(cpu_get_model(), 0x0A);
-        print_newline();
+        print_int(cpu_get_model(), 0x0A); print_newline();
         print_string("  Uptime  : ", 0x0F);
         print_int(timer_seconds(), 0x0A);
-        print_string(" seconds", 0x0F);
-        print_newline();
+        print_string(" seconds", 0x0F); print_newline();
         print_string("  Procs   : ", 0x0F);
         print_int(proc_count(), 0x0A);
-        print_string(" running", 0x0F);
-        print_newline();
+        print_string(" running", 0x0F); print_newline();
         unsigned int f = 0, u = 0;
         mem_stats(&f, &u);
         print_string("  Heap    : ", 0x0F);
         print_int(f, 0x0A);
         print_string(" free / ", 0x0F);
         print_int(u, 0x0C);
-        print_string(" used", 0x0F);
-        print_newline();
-        print_string("  ─────────────────────────────", 0x07);
-        print_newline();
-    
-    }else if (input_buffer[0] == 0) {
+        print_string(" used", 0x0F); print_newline();
+        print_string("  =============================", 0x07); print_newline();
+
+    } else if (input_buffer[0] == 0) {
         // empty
 
     } else {
@@ -333,14 +354,63 @@ void execute_command() {
 
 void shell_handle_key(char c) {
     if (c == '\n') {
+        history_add();
         execute_command();
         buffer_clear();
         print_string("> ", 0x0E);
+
     } else if (c == '\b') {
         if (buffer_pos > 0) {
             buffer_pos--;
             input_buffer[buffer_pos] = 0;
         }
+
+    } else if (c == '\t') {
+        char *commands[] = {
+            "help", "about", "clear", "reboot", "echo",
+            "color", "meminfo", "version", "uptime", "ls",
+            "create", "write", "read", "rm", "append",
+            "rename", "ps", "spawn", "kill", "sysinfo", 0
+        };
+        int i = 0;
+        while (commands[i]) {
+            int match = 1;
+            int j = 0;
+            while (j < buffer_pos) {
+                if (input_buffer[j] != commands[i][j]) {
+                    match = 0;
+                    break;
+                }
+                j++;
+            }
+            if (match && buffer_pos > 0) {
+                line_replace(commands[i]);
+                break;
+            }
+            i++;
+        }
+
+    } else if (c == 0x01) {
+        if (history_count == 0) return;
+        if (history_index == -1) {
+            history_index = (history_count - 1) % 8;
+        } else {
+            int prev = (history_index - 1 + 8) % 8;
+            if (prev != history_count % 8) history_index = prev;
+        }
+        line_replace(history[history_index]);
+
+    } else if (c == 0x02) {
+        if (history_index == -1) return;
+        history_index = (history_index + 1) % 8;
+        if (history_index == history_count % 8) {
+            while (buffer_pos > 0) { backspace(); buffer_pos--; }
+            buffer_clear();
+            history_index = -1;
+        } else {
+            line_replace(history[history_index]);
+        }
+
     } else {
         if (buffer_pos < 255) {
             input_buffer[buffer_pos] = c;
