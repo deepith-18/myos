@@ -1,5 +1,6 @@
 #define KEYBOARD_PORT 0x60
 
+// Normal scancode map (no shift)
 char scancode_map[] = {
     0, 0, '1','2','3','4','5','6','7','8','9','0','-','=', 0,
     0, 'q','w','e','r','t','y','u','i','o','p','[',']', 0,
@@ -7,6 +8,19 @@ char scancode_map[] = {
     0, '\\','z','x','c','v','b','n','m',',','.','/', 0,
     '*', 0, ' '
 };
+
+// Shifted scancode map
+char scancode_shift_map[] = {
+    0, 0, '!','@','#','$','%','^','&','*','(',')','-','+', 0,
+    0, 'Q','W','E','R','T','Y','U','I','O','P','{','}', 0,
+    0, 'A','S','D','F','G','H','J','K','L',':','"','~',
+    0, '|','Z','X','C','V','B','N','M','<','>','?', 0,
+    '*', 0, ' '
+};
+
+// Shift and caps lock state
+int shift_pressed = 0;
+int caps_lock = 0;
 
 unsigned char port_read(unsigned short port) {
     unsigned char result;
@@ -24,7 +38,28 @@ char keyboard_read() {
     if (!keyboard_has_key()) return 0;
 
     unsigned char scancode = port_read(KEYBOARD_PORT);
-    if (scancode & 0x80) return 0;
+
+    // Key release events (bit 7 set)
+    if (scancode & 0x80) {
+        unsigned char released = scancode & 0x7F;
+        // Left shift release (0x2A) or Right shift release (0x36)
+        if (released == 0x2A || released == 0x36) {
+            shift_pressed = 0;
+        }
+        return 0;
+    }
+
+    // Left shift press
+    if (scancode == 0x2A || scancode == 0x36) {
+        shift_pressed = 1;
+        return 0;
+    }
+
+    // Caps Lock toggle
+    if (scancode == 0x3A) {
+        caps_lock = !caps_lock;
+        return 0;
+    }
 
     // Backspace
     if (scancode == 0x0E) return '\b';
@@ -35,14 +70,27 @@ char keyboard_read() {
     // Tab
     if (scancode == 0x0F) return '\t';
 
-    // Up arrow → return special code 0x01
+    // Up arrow
     if (scancode == 0x48) return 0x01;
 
-    // Down arrow → return special code 0x02
+    // Down arrow
     if (scancode == 0x50) return 0x02;
 
+    // Normal characters
     if (scancode < sizeof(scancode_map)) {
-        return scancode_map[scancode];
+        char c;
+        if (shift_pressed) {
+            c = scancode_shift_map[scancode];
+        } else {
+            c = scancode_map[scancode];
+        }
+
+        // Apply caps lock to letters only
+        if (caps_lock && c >= 'a' && c <= 'z') c = c - 32;
+        if (caps_lock && c >= 'A' && c <= 'Z' && !shift_pressed) c = c + 32;
+
+        return c;
     }
+
     return 0;
 }
