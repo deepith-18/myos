@@ -125,6 +125,8 @@ void execute_command() {
         print_string("  spawn <name>   create process", 0x0F); print_newline();
         print_string("  kill <pid>     kill process", 0x0F); print_newline();
         print_string("  sysinfo        full system info", 0x0F); print_newline();
+        print_string("  calc <n> op <n> calculate math", 0x0F);  print_newline();
+   
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -186,7 +188,8 @@ void execute_command() {
         else { print_newline(); print_string("  Usage: color 1-5", 0x07); }
         print_newline();
 
-    } else if (str_compare(input_buffer, "ls")) {
+    } 
+    else if (str_compare(input_buffer, "ls")) {
         print_newline();
         print_string("  Files:", 0x0E); print_newline();
         int i = 0; int found = 0;
@@ -342,7 +345,79 @@ void execute_command() {
         print_string(" used", 0x0F); print_newline();
         print_string("  =============================", 0x07); print_newline();
 
-    } else if (input_buffer[0] == 0) {
+    } else if (str_starts_with(input_buffer, "calc ")) {
+        char *expr = input_buffer + 5;
+
+        // Parse first number
+        int a = 0;
+        int neg_a = 0;
+        int i = 0;
+
+        if (expr[i] == '-') { neg_a = 1; i++; }
+        while (expr[i] >= '0' && expr[i] <= '9') {
+            a = a * 10 + (expr[i] - '0');
+            i++;
+        }
+        if (neg_a) a = -a;
+
+        // Skip space
+        while (expr[i] == ' ') i++;
+
+        // Get operator
+        char op = expr[i];
+        i++;
+
+        // Skip space
+        while (expr[i] == ' ') i++;
+
+        // Parse second number
+        int b = 0;
+        int neg_b = 0;
+        if (expr[i] == '-') { neg_b = 1; i++; }
+        while (expr[i] >= '0' && expr[i] <= '9') {
+            b = b * 10 + (expr[i] - '0');
+            i++;
+        }
+        if (neg_b) b = -b;
+
+        // Calculate result
+        print_newline();
+        if (op == '+') {
+            print_string("  Result: ", 0x0A);
+            print_int(a + b, 0x0A);
+        } else if (op == '-') {
+            print_string("  Result: ", 0x0A);
+            print_int(a - b, 0x0A);
+        } else if (op == '*') {
+            print_string("  Result: ", 0x0A);
+            print_int(a * b, 0x0A);
+        } else if (op == '/') {
+            if (b == 0) {
+                print_string("  Error: divide by zero!", 0x0C);
+            } else {
+                print_string("  Result: ", 0x0A);
+                print_int(a / b, 0x0A);
+                // Show remainder if any
+                int rem = a % b;
+                if (rem != 0) {
+                    print_string("  remainder ", 0x07);
+                    print_int(rem, 0x07);
+                }
+            }
+        } else if (op == '%') {
+            if (b == 0) {
+                print_string("  Error: divide by zero!", 0x0C);
+            } else {
+                print_string("  Result: ", 0x0A);
+                print_int(a % b, 0x0A);
+            }
+        } else {
+            print_string("  Error: unknown operator", 0x0C);
+            print_newline();
+            print_string("  Use: calc <n> +/-/*///%  <n>", 0x07);
+        }
+        print_newline();
+    }else if (input_buffer[0] == 0) {
         // empty
 
     } else {
@@ -370,7 +445,7 @@ void shell_handle_key(char c) {
             "help", "about", "clear", "reboot", "echo",
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
-            "rename", "ps", "spawn", "kill", "sysinfo", 0
+           "rename", "ps", "spawn", "kill", "sysinfo", "calc", 0
         };
         int i = 0;
         while (commands[i]) {
