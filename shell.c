@@ -1,17 +1,16 @@
-// System info
+void snake_game();
+
 char *cpu_get_vendor();
 unsigned int cpu_get_family();
 unsigned int cpu_get_model();
 int proc_count();
 unsigned int timer_get_ticks();
 
-// Process manager
 int proc_spawn(char *name);
 int proc_kill(unsigned int pid);
 struct process { unsigned int pid; char name[32]; unsigned int state; unsigned int ticks; };
 struct process *proc_get(int index);
 
-// Filesystem declarations
 int fs_create(char *name);
 int fs_write(char *name, char *data);
 char *fs_read(char *name);
@@ -21,7 +20,6 @@ int fs_rename(char *old_name, char *new_name);
 struct file { char name[16]; char data[256]; unsigned int size; unsigned int used; };
 struct file *fs_get(int index);
 
-// Kernel declarations
 void print_string(char *str, unsigned char color);
 void print_char(char c, unsigned char color);
 void print_newline();
@@ -32,12 +30,10 @@ void backspace();
 void mem_stats(unsigned int *free_bytes, unsigned int *used_bytes);
 unsigned int timer_seconds();
 
-// Input buffer
 char input_buffer[256];
 int buffer_pos = 0;
 unsigned char current_color = 0x0F;
 
-// Command history
 char history[8][256];
 int history_count = 0;
 int history_index = -1;
@@ -101,32 +97,31 @@ void reboot() {
 }
 
 void execute_command() {
-
     if (str_compare(input_buffer, "help")) {
         print_newline();
         print_string("  Commands:", 0x0E); print_newline();
-        print_string("  help           show this list", 0x0F); print_newline();
-        print_string("  about          about this OS", 0x0F); print_newline();
-        print_string("  clear          clear screen", 0x0F); print_newline();
-        print_string("  reboot         restart OS", 0x0F); print_newline();
-        print_string("  echo <text>    print text", 0x0F); print_newline();
-        print_string("  color <n>      change color 1-5", 0x0F); print_newline();
-        print_string("  meminfo        memory layout", 0x0F); print_newline();
-        print_string("  version        OS version", 0x0F); print_newline();
-        print_string("  uptime         seconds running", 0x0F); print_newline();
-        print_string("  ls             list files", 0x0F); print_newline();
-        print_string("  create <n>     create file", 0x0F); print_newline();
-        print_string("  write <n> <t>  write file", 0x0F); print_newline();
-        print_string("  read <n>       read file", 0x0F); print_newline();
-        print_string("  rm <n>         delete file", 0x0F); print_newline();
-        print_string("  append <n> <t> append file", 0x0F); print_newline();
-        print_string("  rename <o> <n> rename file", 0x0F); print_newline();
-        print_string("  ps             list processes", 0x0F); print_newline();
-        print_string("  spawn <name>   create process", 0x0F); print_newline();
-        print_string("  kill <pid>     kill process", 0x0F); print_newline();
-        print_string("  sysinfo        full system info", 0x0F); print_newline();
+        print_string("  help            show this list", 0x0F); print_newline();
+        print_string("  about           about this OS", 0x0F); print_newline();
+        print_string("  clear           clear screen", 0x0F); print_newline();
+        print_string("  reboot          restart OS", 0x0F); print_newline();
+        print_string("  echo <text>     print text", 0x0F); print_newline();
+        print_string("  color <n>       change color 1-5", 0x0F); print_newline();
+        print_string("  meminfo         memory layout", 0x0F); print_newline();
+        print_string("  version         OS version", 0x0F); print_newline();
+        print_string("  uptime          seconds running", 0x0F); print_newline();
+        print_string("  ls              list files", 0x0F); print_newline();
+        print_string("  create <n>      create file", 0x0F); print_newline();
+        print_string("  write <n> <t>   write file", 0x0F); print_newline();
+        print_string("  read <n>        read file", 0x0F); print_newline();
+        print_string("  rm <n>          delete file", 0x0F); print_newline();
+        print_string("  append <n> <t>  append file", 0x0F); print_newline();
+        print_string("  rename <o> <n>  rename file", 0x0F); print_newline();
+        print_string("  ps              list processes", 0x0F); print_newline();
+        print_string("  spawn <name>    create process", 0x0F); print_newline();
+        print_string("  kill <pid>      kill process", 0x0F); print_newline();
+        print_string("  sysinfo         full system info", 0x0F); print_newline();
         print_string("  calc <n> op <n> calculate math", 0x0F);  print_newline();
-   
+        print_string("  snake           play snake game", 0x0F);  print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -188,8 +183,7 @@ void execute_command() {
         else { print_newline(); print_string("  Usage: color 1-5", 0x07); }
         print_newline();
 
-    } 
-    else if (str_compare(input_buffer, "ls")) {
+    } else if (str_compare(input_buffer, "ls")) {
         print_newline();
         print_string("  Files:", 0x0E); print_newline();
         int i = 0; int found = 0;
@@ -347,8 +341,6 @@ void execute_command() {
 
     } else if (str_starts_with(input_buffer, "calc ")) {
         char *expr = input_buffer + 5;
-
-        // Parse first number
         int a = 0;
         int neg_a = 0;
         int i = 0;
@@ -360,17 +352,11 @@ void execute_command() {
         }
         if (neg_a) a = -a;
 
-        // Skip space
         while (expr[i] == ' ') i++;
-
-        // Get operator
         char op = expr[i];
         i++;
-
-        // Skip space
         while (expr[i] == ' ') i++;
 
-        // Parse second number
         int b = 0;
         int neg_b = 0;
         if (expr[i] == '-') { neg_b = 1; i++; }
@@ -380,7 +366,6 @@ void execute_command() {
         }
         if (neg_b) b = -b;
 
-        // Calculate result
         print_newline();
         if (op == '+') {
             print_string("  Result: ", 0x0A);
@@ -397,7 +382,6 @@ void execute_command() {
             } else {
                 print_string("  Result: ", 0x0A);
                 print_int(a / b, 0x0A);
-                // Show remainder if any
                 int rem = a % b;
                 if (rem != 0) {
                     print_string("  remainder ", 0x07);
@@ -417,7 +401,25 @@ void execute_command() {
             print_string("  Use: calc <n> +/-/*///%  <n>", 0x07);
         }
         print_newline();
-    }else if (input_buffer[0] == 0) {
+
+    } else if (str_compare(input_buffer, "snake")) {
+        snake_game();
+        clear_screen();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                          ", 0x0B);
+        print_newline();
+        print_string("         x86 32-bit Protected Mode Kernel                                       ", 0x0A);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string(" Type 'help' to see all commands", 0x0E);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string("> ", 0x0E);
+
+    } else if (input_buffer[0] == 0) {
         // empty
 
     } else {
@@ -428,6 +430,8 @@ void execute_command() {
 }
 
 void shell_handle_key(char c) {
+    if (c == 0) return; 
+
     if (c == '\n') {
         history_add();
         execute_command();
@@ -445,7 +449,7 @@ void shell_handle_key(char c) {
             "help", "about", "clear", "reboot", "echo",
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
-           "rename", "ps", "spawn", "kill", "sysinfo", "calc", 0
+            "rename", "ps", "spawn", "kill", "sysinfo", "calc", "snake", 0
         };
         int i = 0;
         while (commands[i]) {

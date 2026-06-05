@@ -1,12 +1,10 @@
 unsigned char *vga = (unsigned char *)0xB8000;
 int cursor = 0;
 
-// Write to VGA port
 void vga_port_write(unsigned short port, unsigned char data) {
     __asm__("outb %0, %1" : : "a"(data), "Nd"(port));
 }
 
-// Update hardware cursor position
 void update_cursor() {
     unsigned short pos = cursor;
     vga_port_write(0x3D4, 0x0F);
@@ -15,7 +13,6 @@ void update_cursor() {
     vga_port_write(0x3D5, (unsigned char)((pos >> 8) & 0xFF));
 }
 
-// Enable blinking cursor
 void cursor_enable() {
     vga_port_write(0x3D4, 0x0A);
     vga_port_write(0x3D5, (0 & 0xC0) | 13);
@@ -111,7 +108,6 @@ void proc_init();
 void cpu_detect();
 
 void kernel_main() {
-    idt_init();
     mem_init();
     fs_init();
     proc_init();
@@ -121,9 +117,9 @@ void kernel_main() {
 
     print_string("================================================================================", 0x08);
     print_newline();
-    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+    print_string("          Welcome to DeepithOS v0.1 - Built by Deepith                          ", 0x0B);
     print_newline();
-    print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+    print_string("          x86 32-bit Protected Mode Kernel                                       ", 0x0A);
     print_newline();
     print_string("================================================================================", 0x08);
     print_newline();
@@ -134,14 +130,16 @@ void kernel_main() {
     print_newline();
     print_string("> ", 0x0E);
 
-  while (1) {
+    while (1) {
         char c = keyboard_read();
+        
+        // Safely ignore zero bytes so your commands never break
         if (c == 0) continue;
 
         if (c == '\b') {
             backspace();
         } else if (c == '\t' || c == 0x01 || c == 0x02) {
-            // Tab and arrow keys handled by shell only
+            // Handled inside shell
         } else if (c != '\n') {
             print_char(c, 0x0F);
         }

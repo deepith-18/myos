@@ -1,26 +1,27 @@
+#include "ports.h" // Ensure this includes your port_read/inb definitions
+
 #define KEYBOARD_PORT 0x60
 
-// Normal scancode map (no shift)
-char scancode_map[] = {
-    0, 0, '1','2','3','4','5','6','7','8','9','0','-','=', 0,
-    0, 'q','w','e','r','t','y','u','i','o','p','[',']', 0,
-    0, 'a','s','d','f','g','h','j','k','l',';','\'','`',
-    0, '\\','z','x','c','v','b','n','m',',','.','/', 0,
-    '*', 0, ' '
+// CORRECTED: Perfect 1-to-1 index matching for IBM Scan Code Set 1
+char scancode_map[128] = {
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+  '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
+    0,  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',   0,
+  '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',   0, '*',   0, ' '
 };
 
-// Shifted scancode map
-char scancode_shift_map[] = {
-    0, 0, '!','@','#','$','%','^','&','*','(',')','-','+', 0,
-    0, 'Q','W','E','R','T','Y','U','I','O','P','{','}', 0,
-    0, 'A','S','D','F','G','H','J','K','L',':','"','~',
-    0, '|','Z','X','C','V','B','N','M','<','>','?', 0,
-    '*', 0, ' '
+// CORRECTED: Fixed shifted map alignment 
+char scancode_shift_map[128] = {
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
+  '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
+    0,  'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',   0,
+  '|',  'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?',   0, '*',   0, ' '
 };
 
-// Shift and caps lock state
+// Shift, caps lock, and keyboard focus states
 int shift_pressed = 0;
 int caps_lock = 0;
+int keyboard_focus = 0; // 0 = Shell/Kernel, 1 = Snake Game
 
 unsigned char port_read(unsigned short port) {
     unsigned char result;
@@ -42,14 +43,13 @@ char keyboard_read() {
     // Key release events (bit 7 set)
     if (scancode & 0x80) {
         unsigned char released = scancode & 0x7F;
-        // Left shift release (0x2A) or Right shift release (0x36)
         if (released == 0x2A || released == 0x36) {
             shift_pressed = 0;
         }
         return 0;
     }
 
-    // Left shift press
+    // Left/Right shift press
     if (scancode == 0x2A || scancode == 0x36) {
         shift_pressed = 1;
         return 0;
@@ -61,23 +61,14 @@ char keyboard_read() {
         return 0;
     }
 
-    // Backspace
-    if (scancode == 0x0E) return '\b';
-
-    // Enter
-    if (scancode == 0x1C) return '\n';
-
-    // Tab
-    if (scancode == 0x0F) return '\t';
-
     // Up arrow
     if (scancode == 0x48) return 0x01;
 
     // Down arrow
     if (scancode == 0x50) return 0x02;
 
-    // Normal characters
-    if (scancode < sizeof(scancode_map)) {
+    // Standard character map lookup bounded to 128 keys
+    if (scancode < 128) {
         char c;
         if (shift_pressed) {
             c = scancode_shift_map[scancode];
@@ -85,7 +76,7 @@ char keyboard_read() {
             c = scancode_map[scancode];
         }
 
-        // Apply caps lock to letters only
+        // Apply caps lock logic to alphabetical letters
         if (caps_lock && c >= 'a' && c <= 'z') c = c - 32;
         if (caps_lock && c >= 'A' && c <= 'Z' && !shift_pressed) c = c + 32;
 
