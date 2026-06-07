@@ -1,212 +1,162 @@
+#include "ports.h"
+
 #define SCREEN_W 80
 #define SCREEN_H 25
-#define MAX_SNAKE 100
-
-void print_string(char *str, unsigned char color);
-void print_char(char c, unsigned char color);
-void print_newline();
-void clear_screen();
-void update_cursor();
-
-char keyboard_read();
-unsigned int timer_get_ticks();
+#define MAX_SNAKE 150
 
 extern unsigned char *vga;
 extern int cursor;
 
-void draw_char(int x, int y, char c, unsigned char color) {
-    int pos = y * SCREEN_W + x;
-    vga[pos * 2]     = c;
-    vga[pos * 2 + 1] = color;
-}
-
-char get_char(int x, int y) {
-    int pos = y * SCREEN_W + x;
-    return vga[pos * 2];
-}
-
-unsigned int rand_seed = 12345;
-unsigned int rand_next() {
-    rand_seed = rand_seed * 1103515245 + 12345;
-    return (rand_seed >> 16) & 0x7FFF;
-}
+void clear_screen();
+void print_string(char *str, unsigned char color);
+void print_newline();
+char keyboard_read();
+unsigned int timer_get_ticks();
 
 int snake_x[MAX_SNAKE];
 int snake_y[MAX_SNAKE];
 int snake_len;
-int dir; // 0=right 1=left 2=up 3=down
+int snake_dir; 
+int food_x, food_y;
+int game_score;
+unsigned int s_rand = 0xACE1u;
 
-int food_x;
-int food_y;
-int score;
-
-// Reads directly from PS/2 Status Register safely inside local context
-unsigned char snake_check_port() {
-    unsigned char result;
-    __asm__("inb $0x64, %0" : "=a"(result));
-    return result & 0x01;
+void s_draw(int x, int y, char c, unsigned char color) {
+    if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return;
+    vga[(y * SCREEN_W + x) * 2] = c;
+    vga[(y * SCREEN_W + x) * 2 + 1] = color;
 }
 
-void place_food() {
-    int x, y;
-    do {
-        x = 2 + (rand_next() % (SCREEN_W - 4));
-        y = 2 + (rand_next() % (SCREEN_H - 4));
-    } while (get_char(x, y) != ' ');
-    food_x = x;
-    food_y = y;
-    draw_char(food_x, food_y, '*', 0x0C);
+char s_get(int x, int y) {
+    if (x < 0 || x >= SCREEN_W || y < 0 || y >= SCREEN_H) return '#';
+    return vga[(y * SCREEN_W + x) * 2];
 }
 
-void draw_border() {
-    int x, y;
-    for (x = 0; x < SCREEN_W; x++) {
-        draw_char(x, 0, '-', 0x07);
-        draw_char(x, SCREEN_H - 2, '-', 0x07);
+void s_place_food() {
+    s_rand = s_rand * 1103515245 + 12345;
+    food_x = 2 + (s_rand % (SCREEN_W - 5));
+    food_y = 2 + (s_rand % (SCREEN_H - 5));
+    if (s_get(food_x, food_y) != ' ') {
+        s_place_food(); 
+        return;
     }
-    for (y = 0; y < SCREEN_H - 1; y++) {
-        draw_char(0, y, '|', 0x07);
-        draw_char(SCREEN_W - 1, y, '|', 0x07);
-    }
+    s_draw(food_x, food_y, '*', 0x0C);
 }
 
-void draw_score() {
-    draw_char(2, SCREEN_H - 1, 'S', 0x0E);
-    draw_char(3, SCREEN_H - 1, 'c', 0x0E);
-    draw_char(4, SCREEN_H - 1, 'o', 0x0E);
-    draw_char(5, SCREEN_H - 1, 'r', 0x0E);
-    draw_char(6, SCREEN_H - 1, 'e', 0x0E);
-    draw_char(7, SCREEN_H - 1, ':', 0x0E);
-    draw_char(8, SCREEN_H - 1, ' ', 0x0E);
-
-    int s = score;
-    if (s == 0) {
-        draw_char(9, SCREEN_H - 1, '0', 0x0A);
-    } else {
-        char digits[6];
-        int i = 0;
-        while (s > 0) { digits[i++] = '0' + (s % 10); s /= 10; }
-        int col = 9;
-        while (i > 0) { draw_char(col++, SCREEN_H - 1, digits[--i], 0x0A); }
-    }
-}
-
-void wait_ticks(unsigned int n) {
+// SLOW DOWN FUNCTION
+void s_sleep(unsigned int ticks) {
     unsigned int start = timer_get_ticks();
-    while (timer_get_ticks() - start < n);
+    
+    // If your PIT timer is not working, this manual loop will run.
+    // I increased the number to 40,000,000 for a slower fallback.
+    if (start == 0) { 
+        for(volatile int i=0; i<40000000; i++); 
+        return;
+    }
+
+    // Normal Timer-based wait
+    while (timer_get_ticks() - start < ticks);
 }
 
 void snake_game() {
     clear_screen();
+    cursor = 0; 
 
-    snake_len = 3;
-    snake_x[0] = 20; snake_y[0] = 12;
-    snake_x[1] = 19; snake_y[1] = 12;
-    snake_x[2] = 18; snake_y[2] = 12;
-    dir = 0;  
-    score = 0;
-
-    draw_border();
-
-    draw_char(snake_x[0], snake_y[0], '@', 0x0A);
-    draw_char(snake_x[1], snake_y[1], 'o', 0x0A);
-    draw_char(snake_x[2], snake_y[2], 'o', 0x0A);
-
-    place_food();
-    draw_score();
-
-    draw_char(30, SCREEN_H - 1, 'W', 0x07);
-    draw_char(31, SCREEN_H - 1, 'A', 0x07);
-    draw_char(32, SCREEN_H - 1, 'S', 0x07);
-    draw_char(33, SCREEN_H - 1, 'D', 0x07);
-    draw_char(34, SCREEN_H - 1, '=', 0x07);
-    draw_char(35, SCREEN_H - 1, 'm', 0x07);
-    draw_char(36, SCREEN_H - 1, 'o', 0x07);
-    draw_char(37, SCREEN_H - 1, 'v', 0x07);
-    draw_char(38, SCREEN_H - 1, 'e', 0x07);
-
-    while (1) {
-        // ONLY call keyboard_read if a key is genuinely waiting at the hardware interface
-        if (snake_check_port()) {
-            char c = keyboard_read();
-            if (c == 'w' || c == 'W') { if (dir != 3) dir = 2; }
-            if (c == 's' || c == 'S') { if (dir != 2) dir = 3; }
-            if (c == 'a' || c == 'A') { if (dir != 0) dir = 1; }
-            if (c == 'd' || c == 'D') { if (dir != 1) dir = 0; }
-            if (c == 'q' || c == 'Q') break;  
-        }
-
-        // Snake keeps sliding dynamically even when no key is touched!
-        int new_x = snake_x[0];
-        int new_y = snake_y[0];
-        if (dir == 0) new_x++;
-        if (dir == 1) new_x--;
-        if (dir == 2) new_y--;
-        if (dir == 3) new_y++;
-
-        if (new_x <= 0 || new_x >= SCREEN_W - 1 || new_y <= 0 || new_y >= SCREEN_H - 2) {
-            break; 
-        }
-
-        char hit = get_char(new_x, new_y);
-        if (hit == 'o' || hit == '@') break;
-
-        int ate = (new_x == food_x && new_y == food_y);
-        int tail_x = snake_x[snake_len - 1];
-        int tail_y = snake_y[snake_len - 1];
-
-        int i;
-        for (i = snake_len - 1; i > 0; i--) {
-            snake_x[i] = snake_x[i - 1];
-            snake_y[i] = snake_y[i - 1];
-        }
-        snake_x[0] = new_x;
-        snake_y[0] = new_y;
-
-        if (!ate) {
-            draw_char(tail_x, tail_y, ' ', 0x0F);
-        } else {
-            if (snake_len < MAX_SNAKE) {
-                snake_x[snake_len] = tail_x;
-                snake_y[snake_len] = tail_y;
-                snake_len++;
-            }
-            score += 10;
-            draw_score();
-            place_food();
-        }
-
-        draw_char(snake_x[1], snake_y[1], 'o', 0x0A);
-        draw_char(snake_x[0], snake_y[0], '@', 0x0B);
-
-        unsigned int speed = 8;
-        if (score > 50)  speed = 6;
-        if (score > 100) speed = 4;
-        wait_ticks(speed);
+    snake_len = 5;
+    for(int i=0; i<snake_len; i++) {
+        snake_x[i] = 20 - i;
+        snake_y[i] = 12;
     }
+    snake_dir = 0; // Start moving Right
+    game_score = 0;
 
-    clear_screen();
-    cursor = 0;
-    print_string("   GAME OVER!", 0x0C);
-    print_newline();
-    print_string("   Score: ", 0x0F);
-    int s = score;
-    if (s == 0) {
-        print_char('0', 0x0A);
-    } else {
-        char digits[6];
-        int i = 0;
-        while (s > 0) { digits[i++] = '0' + (s % 10); s /= 10; }
-        while (i > 0) print_char(digits[--i], 0x0A);
+    // --- DRAW BORDERS ---
+    // Horizontal walls
+    for(int x=0; x < SCREEN_W; x++) {
+        s_draw(x, 0, '#', 0x07);           
+        s_draw(x, SCREEN_H-2, '#', 0x07);  
     }
-    print_newline();
-    print_string("   Press any key to return...", 0x07);
-    print_newline();
+    // Vertical walls
+    for(int y=0; y < SCREEN_H-1; y++) {
+        s_draw(0, y, '#', 0x07);           
+        s_draw(SCREEN_W-1, y, '#', 0x07);  
+    }
+    
+    s_place_food();
 
-    while (1) {
-        if (snake_check_port()) {
-            keyboard_read();
+    int running = 1;
+    while(running) {
+        char k = keyboard_read();
+
+        // Control logic: WASD or Arrow Keys (1=Up, 2=Down, 3=Left, 4=Right)
+        if ((k == 'w' || k == 'W' || k == 1) && snake_dir != 3) snake_dir = 2; // Up
+        if ((k == 's' || k == 'S' || k == 2) && snake_dir != 2) snake_dir = 3; // Down
+        if ((k == 'a' || k == 'A' || k == 3) && snake_dir != 0) snake_dir = 1; // Left
+        if ((k == 'd' || k == 'D' || k == 4) && snake_dir != 1) snake_dir = 0; // Right
+        if (k == 'q' || k == 'Q') break;
+
+        int nx = snake_x[0];
+        int ny = snake_y[0];
+        if (snake_dir == 0) nx++;
+        if (snake_dir == 1) nx--;
+        if (snake_dir == 2) ny--;
+        if (snake_dir == 3) ny++;
+
+        // Collision Check
+        char hit = s_get(nx, ny);
+        if (hit == '#' || hit == 'o') {
+            running = 0;
             break;
         }
+
+        // Eat logic
+        if (nx == food_x && ny == food_y) {
+            if(snake_len < MAX_SNAKE) snake_len++;
+            game_score += 10;
+            s_place_food();
+        } else {
+            // Remove tail
+            s_draw(snake_x[snake_len-1], snake_y[snake_len-1], ' ', 0x07);
+        }
+
+        // Move body in array
+        for(int i = snake_len-1; i > 0; i--) {
+            snake_x[i] = snake_x[i-1];
+            snake_y[i] = snake_y[i-1];
+        }
+        snake_x[0] = nx;
+        snake_y[0] = ny;
+
+        // Draw the snake
+        for(int i=0; i<snake_len; i++) {
+            s_draw(snake_x[i], snake_y[i], (i==0)?'@':'o', 0x0A);
+        }
+
+        // --- SPEED CONTROL ---
+        // 250 ticks is usually "Normal" speed for 1000Hz PIT.
+        // If it is still too fast, change 250 to 500.
+        s_sleep(250); 
     }
+
+    // End Game
+    clear_screen();
+    cursor = 0;
+    print_string("  GAME OVER! Score: ", 0x0C);
+    
+    // Convert score to string
+    char score_str[4];
+    score_str[0] = (game_score / 100) + '0';
+    score_str[1] = ((game_score / 10) % 10) + '0';
+    score_str[2] = (game_score % 10) + '0';
+    score_str[3] = '\0';
+    print_string(score_str, 0x0A);
+
+    print_newline();
+    print_string("  Press Q to exit.", 0x0F);
+    while(1) {
+        char k = keyboard_read();
+        if (k == 'q' || k == 'Q') break;
+    }
+    clear_screen();
+    cursor = 0;
 }
