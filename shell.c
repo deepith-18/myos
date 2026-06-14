@@ -1,5 +1,5 @@
+void editor_run(char *fname);
 void snake_game();
-
 char *cpu_get_vendor();
 unsigned int cpu_get_family();
 unsigned int cpu_get_model();
@@ -122,6 +122,7 @@ void execute_command() {
         print_string("  sysinfo         full system info", 0x0F); print_newline();
         print_string("  calc <n> op <n> calculate math", 0x0F);  print_newline();
         print_string("  snake           play snake game", 0x0F);  print_newline();
+        print_string("  edit <name>    open text editor", 0x0F);  print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -419,6 +420,24 @@ void execute_command() {
         print_newline();
         print_string("> ", 0x0E);
 
+} else if (str_starts_with(input_buffer, "edit ")) {
+        char *fname = input_buffer + 5;
+        editor_run(fname);
+        clear_screen();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+        print_newline();
+        print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string(" Type 'help' to see all commands", 0x0E);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_newline();
+        print_string("> ", 0x0E);
     } else if (input_buffer[0] == 0) {
         // empty
 
@@ -449,7 +468,7 @@ void shell_handle_key(char c) {
             "help", "about", "clear", "reboot", "echo",
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
-            "rename", "ps", "spawn", "kill", "sysinfo", "calc", "snake", 0
+           "rename", "ps", "spawn", "kill", "sysinfo", "calc", "snake", "edit", 0
         };
         int i = 0;
         while (commands[i]) {
