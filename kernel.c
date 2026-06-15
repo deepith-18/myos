@@ -112,14 +112,92 @@ void kernel_main() {
     fs_init();
     proc_init();
     cpu_detect();
-    cursor_enable();
+cursor_enable();
+    clear_screen();
+
+    // Boot animation
+    int i;
+
+    // Draw logo first
+    print_string("================================================================================", 0x08);
+    print_newline();
+    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+    print_newline();
+    print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+    print_newline();
+    print_string("================================================================================", 0x08);
+    print_newline();
+    print_newline();
+
+    // Loading steps
+    char *steps[] = {
+        "  Initializing memory manager   ",
+        "  Loading filesystem            ",
+        "  Starting process manager      ",
+        "  Detecting CPU                 ",
+        "  Setting up hardware cursor    ",
+        "  Loading shell                 ",
+        "  Starting DeepithOS            ",
+        0
+    };
+
+    int step = 0;
+    while (steps[step]) {
+        print_string(steps[step], 0x07);
+        print_string(" [", 0x08);
+
+        // Draw progress bar
+        int filled = ((step + 1) * 20) / 7;
+        for (i = 0; i < 20; i++) {
+            if (i < filled) {
+                print_char('#', 0x0A);
+            } else {
+                print_char('-', 0x08);
+            }
+        }
+
+        print_string("] ", 0x08);
+
+        // Percentage
+        int pct = ((step + 1) * 100) / 7;
+        if (pct >= 100) {
+            print_char('1', 0x0A);
+            print_char('0', 0x0A);
+            print_char('0', 0x0A);
+        } else {
+            print_char('0' + pct / 10, 0x0A);
+            print_char('0' + pct % 10, 0x0A);
+        }
+        print_char('%', 0x0A);
+        print_newline();
+
+      // Small delay
+        unsigned int d;
+        for (d = 0; d < 50000000; d++) {
+            __asm__("nop");
+        }
+
+        step++;
+    }
+
+    print_newline();
+    print_string("  System ready!", 0x0A);
+    print_newline();
+    print_newline();
+
+    // Small pause before shell
+    unsigned int pause;
+    for (pause = 0; pause < 10000000; pause++) {
+        __asm__("nop");
+    }
+
     clear_screen();
 
     print_string("================================================================================", 0x08);
     print_newline();
-    print_string("          Welcome to DeepithOS v0.1 - Built by Deepith                          ", 0x0B);
+    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
     print_newline();
-    print_string("          x86 32-bit Protected Mode Kernel                                       ", 0x0A);
+    print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
     print_newline();
     print_string("================================================================================", 0x08);
     print_newline();
@@ -129,7 +207,6 @@ void kernel_main() {
     print_newline();
     print_newline();
     print_string("> ", 0x0E);
-
     while (1) {
         char c = keyboard_read();
         
