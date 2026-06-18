@@ -114,7 +114,98 @@ void kernel_main() {
     cpu_detect();
 cursor_enable();
     clear_screen();
+    // Password protection
+    char password[] = "deepith";
+    char input[32];
+    int attempts = 3;
+    int authenticated = 0;
 
+    while (attempts > 0 && !authenticated) {
+        // Clear input buffer
+        int k;
+        for (k = 0; k < 32; k++) input[k] = 0;
+        int pos = 0;
+
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_newline();
+        print_string("  Enter password: ", 0x0E);
+
+        // Read password (show * instead of characters)
+        while (1) {
+            char c = keyboard_read();
+            if (c == 0) continue;
+
+            if (c == '\n') break;
+
+            if (c == '\b') {
+                if (pos > 0) {
+                    pos--;
+                    input[pos] = 0;
+                    backspace();
+                }
+            } else if (pos < 31 && c >= 32 && c < 127) {
+                input[pos++] = c;
+                print_char('*', 0x0F);
+            }
+        }
+
+        // Check password
+        int match = 1;
+        int pi = 0;
+        while (password[pi] || input[pi]) {
+            if (password[pi] != input[pi]) {
+                match = 0;
+                break;
+            }
+            pi++;
+        }
+
+        if (match) {
+            authenticated = 1;
+        } else {
+            attempts--;
+            print_newline();
+            print_newline();
+            if (attempts > 0) {
+                print_string("  Wrong password! Attempts left: ", 0x0C);
+                print_char('0' + attempts, 0x0C);
+                print_newline();
+                print_newline();
+            } else {
+                print_string("  Access Denied! System locked.", 0x0C);
+                print_newline();
+                // Infinite loop — locked out
+                while (1) { __asm__("hlt"); }
+            }
+            clear_screen();
+        }
+    }
+
+    // Welcome message
+    clear_screen();
+    print_string("================================================================================", 0x08);
+    print_newline();
+    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+    print_newline();
+    print_string("================================================================================", 0x08);
+    print_newline();
+    print_newline();
+    print_string("  Access Granted! Welcome, Deepith!", 0x0A);
+    print_newline();
+    print_newline();
+
+    // Small pause
+    unsigned int wp;
+    for (wp = 0; wp < 80000000; wp++) { __asm__("nop"); }
+
+    clear_screen();
+
+    // Boot animation
     // Boot animation
     int i;
 
