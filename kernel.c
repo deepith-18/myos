@@ -114,6 +114,7 @@ void kernel_main() {
     cpu_detect();
 cursor_enable();
     clear_screen();
+    
     // Password protection
     char password[] = "deepith";
     char input[32];
