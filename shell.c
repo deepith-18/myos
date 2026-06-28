@@ -6,6 +6,10 @@ unsigned int cpu_get_model();
 int proc_count();
 unsigned int timer_get_ticks();
 
+// Kernel credentials (extern references so shell can interface if needed)
+void set_password(char *newpass);
+char *get_username();
+
 int proc_spawn(char *name);
 int proc_kill(unsigned int pid);
 struct process { unsigned int pid; char name[32]; unsigned int state; unsigned int ticks; };
@@ -131,6 +135,9 @@ void execute_command() {
         print_string("  calc <n> op <n> calculate math", theme_text);  print_newline();
         print_string("  snake           play snake game", theme_text);  print_newline();
         print_string("  edit <name>     open text editor", theme_text);  print_newline();
+        print_string("  whoami          show current user", theme_text); print_newline();
+        print_string("  settings        show OS settings", theme_text); print_newline();
+        print_string("  passwd <new>    change password", theme_text); print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -149,7 +156,7 @@ void execute_command() {
         print_string("  DeepithOS v0.1", theme_success); print_newline();
         print_string("  Build: Day 28", theme_text); print_newline();
         print_string("  Arch:  x86 32-bit Protected Mode", theme_text); print_newline();
-        print_string("  Shell: 21 commands", theme_text); print_newline();
+        print_string("  Shell: 24 commands", theme_text); print_newline();
 
     } else if (str_compare(input_buffer, "meminfo")) {
         print_newline();
@@ -185,7 +192,6 @@ void execute_command() {
     } else if (str_starts_with(input_buffer, "color ")) {
         char code = input_buffer[6];
         if (code == '1') { current_color = 0x0A; print_newline(); print_string("  Color: Green", 0x0A); }
-        // For standard themes, keeping these configurations relative to choices:
         else if (code == '2') { current_color = 0x0B; print_newline(); print_string("  Color: Cyan", 0x0B); }
         else if (code == '3') { current_color = 0x0C; print_newline(); print_string("  Color: Red", 0x0C); }
         else if (code == '4') { current_color = 0x0E; print_newline(); print_string("  Color: Yellow", 0x0E); }
@@ -482,6 +488,49 @@ void execute_command() {
         }
         print_newline();
 
+    } else if (str_compare(input_buffer, "whoami")) {
+        print_newline();
+        char *data = fs_read("user.cfg");
+        if (data) {
+            print_string("  User: ", 0x0A);
+            print_string(data, 0x0A);
+        } else {
+            print_string("  User: deepith", 0x0A);
+        }
+        print_newline();
+
+    } else if (str_compare(input_buffer, "settings")) {
+        print_newline();
+        print_string("  DeepithOS Settings", 0x0E);
+        print_newline();
+        print_string("  ====================", 0x07);
+        print_newline();
+        print_string("  User     : ", 0x0F);
+        char *udata = fs_read("user.cfg");
+        if (udata) { print_string(udata, 0x0A); }
+        else { print_string("deepith", 0x0A); }
+        print_newline();
+        print_string("  Theme    : ", 0x0F);
+        if (theme_text == 0x0A) print_string("matrix", 0x0A);
+        else if (theme_text == 0x0B) print_string("ocean", 0x0B);
+        else if (theme_text == 0x0C) print_string("fire", 0x0C);
+        else print_string("dark", 0x0F);
+        print_newline();
+        print_string("  ====================", 0x07);
+        print_newline();
+
+    } else if (str_starts_with(input_buffer, "passwd ")) {
+        char *newpass = input_buffer + 7;
+        if (fs_write("pass.cfg", newpass) != 0) {
+            fs_create("pass.cfg");
+            fs_write("pass.cfg", newpass);
+        }
+        print_newline();
+        print_string("  Password changed!", 0x0A);
+        print_newline();
+        print_string("  Takes effect on next boot.", 0x07);
+        print_newline();
+
     } else if (input_buffer[0] == 0) {
         // empty
 
@@ -512,7 +561,8 @@ void shell_handle_key(char c) {
             "help", "about", "clear", "reboot", "echo",
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
-            "rename", "ps", "spawn", "kill", "sysinfo", "calc", "snake", "edit", "theme", 0
+            "rename", "ps", "spawn", "kill", "sysinfo", "calc", 
+            "snake", "edit", "theme", "whoami", "settings", "passwd", 0
         };
         int i = 0;
         while (commands[i]) {

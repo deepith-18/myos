@@ -4,13 +4,13 @@ mov ah, 0x0E
 mov al, 'B'
 int 0x10
 
-; Set es=0 so buffer address = es*16 + bx = 0 + 0x1000 = 0x1000
-xor ax, ax
+; Load kernel at 0x10000 (segment 0x1000, offset 0)
+mov ax, 0x1000
 mov es, ax
-mov bx, 0x1000
+xor bx, bx
 
 mov ah, 0x02
-mov al, 64
+mov al, 100
 mov ch, 0
 mov cl, 2
 mov dh, 0
@@ -54,7 +54,7 @@ protected_mode:
     mov ss, ax
     mov es, ax
     mov esp, 0x90000
-    jmp 0x1000
+    jmp 0x10000
 
 times 510-($-$$) db 0
 dw 0xAA55

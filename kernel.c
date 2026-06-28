@@ -1,6 +1,10 @@
 unsigned char *vga = (unsigned char *)0xB8000;
 int cursor = 0;
 
+// Global Username and Password protection (can be changed globally)
+char password[32] = "deepith";
+char username[32] = "deepith";
+
 void vga_port_write(unsigned short port, unsigned char data) {
     __asm__("outb %0, %1" : : "a"(data), "Nd"(port));
 }
@@ -99,6 +103,11 @@ void print_hex(unsigned int num, unsigned char color) {
     }
 }
 
+// External file system operations
+void fs_create(char *filename);
+void fs_write(char *filename, char *data);
+char *fs_read(char *filename);
+
 char keyboard_read();
 void shell_handle_key(char c);
 void idt_init();
@@ -109,14 +118,23 @@ void cpu_detect();
 
 void kernel_main() {
     mem_init();
-    fs_init();
+    fs_init(); // CRITICAL: Filesystem initialized before reading configuration space
     proc_init();
     cpu_detect();
-cursor_enable();
+    cursor_enable();
     clear_screen();
     
-    // Password protection
-    char password[] = "deepith";
+    // Load saved password configurations from disk space safely
+    char *saved_pass = fs_read("pass.cfg");
+    if (saved_pass) {
+        int pi = 0;
+        while (saved_pass[pi] && pi < 31) {
+            password[pi] = saved_pass[pi];
+            pi++;
+        }
+        password[pi] = 0;
+    }
+
     char input[32];
     int attempts = 3;
     int authenticated = 0;
@@ -129,7 +147,7 @@ cursor_enable();
 
         print_string("================================================================================", 0x08);
         print_newline();
-        print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+        print_string("          Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
         print_newline();
         print_string("================================================================================", 0x08);
         print_newline();
@@ -168,6 +186,8 @@ cursor_enable();
 
         if (match) {
             authenticated = 1;
+            fs_create("user.cfg");
+            fs_write("user.cfg", username);
         } else {
             attempts--;
             print_newline();
@@ -177,10 +197,12 @@ cursor_enable();
                 print_char('0' + attempts, 0x0C);
                 print_newline();
                 print_newline();
+                
+                unsigned int delay;
+                for (delay = 0; delay < 30000000; delay++) { __asm__("nop"); }
             } else {
                 print_string("  Access Denied! System locked.", 0x0C);
                 print_newline();
-                // Infinite loop — locked out
                 while (1) { __asm__("hlt"); }
             }
             clear_screen();
@@ -191,7 +213,7 @@ cursor_enable();
     clear_screen();
     print_string("================================================================================", 0x08);
     print_newline();
-    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+    print_string("          Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
     print_newline();
     print_string("================================================================================", 0x08);
     print_newline();
@@ -207,15 +229,14 @@ cursor_enable();
     clear_screen();
 
     // Boot animation
-    // Boot animation
     int i;
 
     // Draw logo first
     print_string("================================================================================", 0x08);
     print_newline();
-    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+    print_string("          Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
     print_newline();
-    print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+    print_string("          x86 32-bit Protected Mode Kernel                                      ", 0x0A);
     print_newline();
     print_string("================================================================================", 0x08);
     print_newline();
@@ -263,7 +284,7 @@ cursor_enable();
         print_char('%', 0x0A);
         print_newline();
 
-      // Small delay
+        // Small delay
         unsigned int d;
         for (d = 0; d < 50000000; d++) {
             __asm__("nop");
@@ -287,9 +308,9 @@ cursor_enable();
 
     print_string("================================================================================", 0x08);
     print_newline();
-    print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
+    print_string("          Welcome to DeepithOS v0.1 - Built by Deepith                         ", 0x0B);
     print_newline();
-    print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+    print_string("          x86 32-bit Protected Mode Kernel                                      ", 0x0A);
     print_newline();
     print_string("================================================================================", 0x08);
     print_newline();
@@ -299,10 +320,10 @@ cursor_enable();
     print_newline();
     print_newline();
     print_string("> ", 0x0E);
+    
     while (1) {
         char c = keyboard_read();
         
-        // Safely ignore zero bytes so your commands never break
         if (c == 0) continue;
 
         if (c == '\b') {
