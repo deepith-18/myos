@@ -1,3 +1,4 @@
+void users_list_all();
 void editor_run(char *fname);
 void snake_game();
 char *cpu_get_vendor();
@@ -6,9 +7,10 @@ unsigned int cpu_get_model();
 int proc_count();
 unsigned int timer_get_ticks();
 
-// Kernel credentials (extern references so shell can interface if needed)
-void set_password(char *newpass);
-char *get_username();
+// Abstracted User Subsystem prototypes
+char *users_get_current();
+int users_change_password(char *new_password);
+int users_add_user(char *username, char *password);
 
 int proc_spawn(char *name);
 int proc_kill(unsigned int pid);
@@ -38,7 +40,6 @@ char input_buffer[256];
 int buffer_pos = 0;
 unsigned char current_color = 0x0F;
 
-// Day 28 Global Theme Variables
 unsigned char theme_text = 0x0F;
 unsigned char theme_accent = 0x0B;
 unsigned char theme_success = 0x0A;
@@ -138,6 +139,7 @@ void execute_command() {
         print_string("  whoami          show current user", theme_text); print_newline();
         print_string("  settings        show OS settings", theme_text); print_newline();
         print_string("  passwd <new>    change password", theme_text); print_newline();
+        print_string("  adduser <u> <p> add/change user profile", theme_text); print_newline();
 
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
@@ -151,12 +153,16 @@ void execute_command() {
         print_string("  Version 0.1 - Learning OS Dev", theme_accent); print_newline();
         print_string("  Day 28 - Shell Themes Integration", theme_accent); print_newline();
 
-    } else if (str_compare(input_buffer, "version")) {
+    } else if (str_compare(input_buffer, "users")) {
+        print_newline();
+        users_list_all();
+        print_newline();
+    }else if (str_compare(input_buffer, "version")) {
         print_newline();
         print_string("  DeepithOS v0.1", theme_success); print_newline();
         print_string("  Build: Day 28", theme_text); print_newline();
         print_string("  Arch:  x86 32-bit Protected Mode", theme_text); print_newline();
-        print_string("  Shell: 24 commands", theme_text); print_newline();
+        print_string("  Shell: 25 commands", theme_text); print_newline();
 
     } else if (str_compare(input_buffer, "meminfo")) {
         print_newline();
@@ -425,7 +431,7 @@ void execute_command() {
         print_newline();
         print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                          ", theme_accent);
         print_newline();
-        print_string("         x86 32-bit Protected Mode Kernel                                       ", theme_success);
+        print_string("         x86 32-bit Protected Mode Kernel                                      ", theme_success);
         print_newline();
         print_string("================================================================================", theme_text);
         print_newline();
@@ -443,7 +449,7 @@ void execute_command() {
         print_newline();
         print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                          ", theme_accent);
         print_newline();
-        print_string("         x86 32-bit Protected Mode Kernel                                       ", theme_success);
+        print_string("         x86 32-bit Protected Mode Kernel                                      ", theme_success);
         print_newline();
         print_string("================================================================================", theme_text);
         print_newline();
@@ -490,13 +496,8 @@ void execute_command() {
 
     } else if (str_compare(input_buffer, "whoami")) {
         print_newline();
-        char *data = fs_read("user.cfg");
-        if (data) {
-            print_string("  User: ", 0x0A);
-            print_string(data, 0x0A);
-        } else {
-            print_string("  User: deepith", 0x0A);
-        }
+        print_string("  User: ", 0x0A);
+        print_string(users_get_current(), 0x0A);
         print_newline();
 
     } else if (str_compare(input_buffer, "settings")) {
@@ -506,9 +507,7 @@ void execute_command() {
         print_string("  ====================", 0x07);
         print_newline();
         print_string("  User     : ", 0x0F);
-        char *udata = fs_read("user.cfg");
-        if (udata) { print_string(udata, 0x0A); }
-        else { print_string("deepith", 0x0A); }
+        print_string(users_get_current(), 0x0A);
         print_newline();
         print_string("  Theme    : ", 0x0F);
         if (theme_text == 0x0A) print_string("matrix", 0x0A);
@@ -521,14 +520,38 @@ void execute_command() {
 
     } else if (str_starts_with(input_buffer, "passwd ")) {
         char *newpass = input_buffer + 7;
-        if (fs_write("pass.cfg", newpass) != 0) {
-            fs_create("pass.cfg");
-            fs_write("pass.cfg", newpass);
+        print_newline();
+        if (users_change_password(newpass) == 0) {
+            print_string("  Password changed completely!", 0x0A);
+            print_newline();
+            print_string("  Takes full effect on next reboot cycle.", 0x07);
+        } else {
+            print_string("  Error matching file storage.", theme_error);
         }
         print_newline();
-        print_string("  Password changed!", 0x0A);
-        print_newline();
-        print_string("  Takes effect on next boot.", 0x07);
+
+    } else if (str_starts_with(input_buffer, "adduser ")) {
+        char *rest = input_buffer + 8;
+        int i = 0;
+        while (rest[i] && rest[i] != ' ') i++;
+        
+        if (rest[i] == ' ') {
+            rest[i] = 0;
+            char *newuser = rest;
+            char *newpass = rest + i + 1;
+            
+            print_newline();
+            if (users_add_user(newuser, newpass) == 0) {
+                print_string("  Successfully modified credential targets!", 0x0A);
+                print_newline();
+                print_string("  Active profile changes on next system boot.", 0x07);
+            } else {
+                print_string("  Error matching file storage targets.", theme_error);
+            }
+        } else {
+            print_newline();
+            print_string("  Usage: adduser <username> <password>", theme_error);
+        }
         print_newline();
 
     } else if (input_buffer[0] == 0) {
@@ -562,7 +585,7 @@ void shell_handle_key(char c) {
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
             "rename", "ps", "spawn", "kill", "sysinfo", "calc", 
-            "snake", "edit", "theme", "whoami", "settings", "passwd", 0
+            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", 0
         };
         int i = 0;
         while (commands[i]) {
