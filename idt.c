@@ -32,6 +32,7 @@ void print_newline();
 // Keyboard handler from keyboard.c
 void keyboard_handler();
 void timer_handler();
+
 // ISR and IRQ handler declarations
 void isr0();
 void isr1();
@@ -83,11 +84,14 @@ void idt_init() {
     idt_set_gate(32, (unsigned int)irq0, 0x08, 0x8E);
     idt_set_gate(33, (unsigned int)irq1, 0x08, 0x8E);
 
-    // Remap PIC and enable keyboard IRQ
+    // Remap PIC to avoid exception overlap conflicts
     pic_remap();
-    pic_enable_keyboard();
+    
+    // Unmask BOTH IRQ0 (Timer) and IRQ1 (Keyboard) on the Master PIC data port.
+    // 0xFC = 11111100b -> Bits 0 and 1 set to 0 (Unmasked/Enabled)
+    __asm__ volatile("outb %0, $0x21" : : "a"((unsigned char)0xFC));
 
-    // Load IDT and enable interrupts
+    // Load IDT into the CPU register and enable interrupts globally
     idt_load(&idtp);
     __asm__("sti");
 }

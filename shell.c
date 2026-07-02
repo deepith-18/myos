@@ -1,3 +1,4 @@
+void clock_run();
 void users_list_all();
 void editor_run(char *fname);
 void snake_game();
@@ -136,6 +137,7 @@ void execute_command() {
         print_string("  calc <n> op <n> calculate math", theme_text);  print_newline();
         print_string("  snake           play snake game", theme_text);  print_newline();
         print_string("  edit <name>     open text editor", theme_text);  print_newline();
+        print_string("  clock           show live clock", theme_text); print_newline();
         print_string("  whoami          show current user", theme_text); print_newline();
         print_string("  settings        show OS settings", theme_text); print_newline();
         print_string("  passwd <new>    change password", theme_text); print_newline();
@@ -157,7 +159,7 @@ void execute_command() {
         print_newline();
         users_list_all();
         print_newline();
-    }else if (str_compare(input_buffer, "version")) {
+    } else if (str_compare(input_buffer, "version")) {
         print_newline();
         print_string("  DeepithOS v0.1", theme_success); print_newline();
         print_string("  Build: Day 28", theme_text); print_newline();
@@ -534,12 +536,12 @@ void execute_command() {
         char *rest = input_buffer + 8;
         int i = 0;
         while (rest[i] && rest[i] != ' ') i++;
-        
+         
         if (rest[i] == ' ') {
             rest[i] = 0;
             char *newuser = rest;
             char *newpass = rest + i + 1;
-            
+             
             print_newline();
             if (users_add_user(newuser, newpass) == 0) {
                 print_string("  Successfully modified credential targets!", 0x0A);
@@ -553,6 +555,24 @@ void execute_command() {
             print_string("  Usage: adduser <username> <password>", theme_error);
         }
         print_newline();
+
+    } else if (str_compare(input_buffer, "clock")) {
+        clock_run();
+        clear_screen();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                          ", 0x0B);
+        print_newline();
+        print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string(" Type 'help' to see all commands", 0x0E);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_newline();
+        print_string("> ", theme_prompt);
 
     } else if (input_buffer[0] == 0) {
         // empty
@@ -585,7 +605,7 @@ void shell_handle_key(char c) {
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
             "rename", "ps", "spawn", "kill", "sysinfo", "calc", 
-            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", 0
+            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", "clock", 0
         };
         int i = 0;
         while (commands[i]) {

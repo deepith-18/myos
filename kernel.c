@@ -125,6 +125,8 @@ void kernel_main() {
     fs_init(); 
     proc_init();
     cpu_detect();
+    idt_init();              
+    __asm__ volatile("sti");
     cursor_enable();
     clear_screen();
     

@@ -1,17 +1,41 @@
-// Tick counter — increments every timer interrupt
 unsigned int timer_ticks = 0;
 
-// Called by IRQ0 (timer interrupt) from idt.c
+void proc_tick();
+
 void timer_handler() {
     timer_ticks++;
+    proc_tick();
 }
 
-// Return seconds running (timer fires ~18 times per second)
+unsigned int timer_get_ticks() {
+    return timer_ticks;
+}
+
 unsigned int timer_seconds() {
     return timer_ticks / 18;
 }
 
-// Return raw ticks
-unsigned int timer_get_ticks() {
-    return timer_ticks;
+// Get minutes since boot
+unsigned int timer_minutes() {
+    return timer_seconds() / 60;
+}
+
+// Get hours since boot
+unsigned int timer_hours() {
+    return timer_minutes() / 60;
+}
+
+// Get seconds part (0-59)
+unsigned int timer_sec_part() {
+    return timer_seconds() % 60;
+}
+
+// Get minutes part (0-59)
+unsigned int timer_min_part() {
+    return timer_minutes() % 60;
+}
+
+// Get hours part
+unsigned int timer_hour_part() {
+    return timer_hours();
 }

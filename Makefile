@@ -6,7 +6,7 @@ LD = ld
 LDFLAGS = -m elf_i386 -T linker.ld --oformat binary
 
 OBJS = kernel_entry.o kernel.o keyboard.o shell.o idt.o idt_c.o pic.o \
-       timer.o memory.o fs.o process.o sysinfo.o snake.o editor.o users.o
+       timer.o memory.o fs.o process.o sysinfo.o snake.o editor.o users.o clock.o
 
 all: os.bin
 
@@ -58,6 +58,9 @@ editor.o: editor.c
 users.o: users.c
 	$(CC) $(CFLAGS) users.c -o users.o
 
+clock.o: clock.c
+	$(CC) $(CFLAGS) clock.c -o clock.o
+
 kernel.bin: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.bin $(OBJS)
 
@@ -66,6 +69,7 @@ os.bin: boot.bin kernel.bin
 	
 run: os.bin
 	qemu-system-x86_64 -drive format=raw,file=os.bin -display sdl,gl=on
+
 clean:
 	rm -f *.o *.bin
 
