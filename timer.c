@@ -1,3 +1,8 @@
+// Define outb inline assembly function to communicate with hardware ports
+static inline void outb(unsigned short port, unsigned char val) {
+    __asm__ volatile ("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
 unsigned int timer_ticks = 0;
 
 void proc_tick();
@@ -5,6 +10,9 @@ void proc_tick();
 void timer_handler() {
     timer_ticks++;
     proc_tick();
+    
+    // Send End of Interrupt (EOI) signal to the Master PIC
+    outb(0x20, 0x20);
 }
 
 unsigned int timer_get_ticks() {

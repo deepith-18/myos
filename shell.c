@@ -1,3 +1,4 @@
+void art_print(char *text, unsigned char color);
 void clock_run();
 void users_list_all();
 void editor_run(char *fname);
@@ -110,39 +111,87 @@ void reboot() {
 }
 
 void execute_command() {
-    if (str_compare(input_buffer, "help")) {
+if (str_compare(input_buffer, "help")) {
         print_newline();
-        print_string("  Commands:", theme_prompt); print_newline();
-        print_string("  help            show this list", theme_text); print_newline();
-        print_string("  about           about this OS", theme_text); print_newline();
-        print_string("  clear           clear screen", theme_text); print_newline();
-        print_string("  reboot          restart OS", theme_text); print_newline();
-        print_string("  echo <text>     print text", theme_text); print_newline();
-        print_string("  color <n>       change color 1-5", theme_text); print_newline();
-        print_string("  theme <name>    dark/matrix/ocean/fire", theme_text); print_newline();
-        print_string("  meminfo         memory layout", theme_text); print_newline();
-        print_string("  version         OS version", theme_text); print_newline();
-        print_string("  uptime          seconds running", theme_text); print_newline();
-        print_string("  ls              list files", theme_text); print_newline();
-        print_string("  create <n>      create file", theme_text); print_newline();
-        print_string("  write <n> <t>   write file", theme_text); print_newline();
-        print_string("  read <n>        read file", theme_text); print_newline();
-        print_string("  rm <n>          delete file", theme_text); print_newline();
-        print_string("  append <n> <t>  append file", theme_text); print_newline();
-        print_string("  rename <o> <n>  rename file", theme_text); print_newline();
-        print_string("  ps              list processes", theme_text); print_newline();
-        print_string("  spawn <name>    create process", theme_text); print_newline();
-        print_string("  kill <pid>      kill process", theme_text); print_newline();
-        print_string("  sysinfo         full system info", theme_text); print_newline();
-        print_string("  calc <n> op <n> calculate math", theme_text);  print_newline();
-        print_string("  snake           play snake game", theme_text);  print_newline();
-        print_string("  edit <name>     open text editor", theme_text);  print_newline();
-        print_string("  clock           show live clock", theme_text); print_newline();
-        print_string("  whoami          show current user", theme_text); print_newline();
-        print_string("  settings        show OS settings", theme_text); print_newline();
-        print_string("  passwd <new>    change password", theme_text); print_newline();
-        print_string("  adduser <u> <p> add/change user profile", theme_text); print_newline();
+        print_string("  DeepithOS Commands (type 'help <topic>'):", theme_prompt);
+        print_newline();
+        print_string("  ----------------------------------------", 0x07);
+        print_newline();
+        print_string("  help basic    -> basic commands", theme_text); print_newline();
+        print_string("  help files    -> file commands", theme_text); print_newline();
+        print_string("  help system   -> system commands", theme_text); print_newline();
+        print_string("  help process  -> process commands", theme_text); print_newline();
+        print_string("  help fun      -> games and art", theme_text); print_newline();
+        print_string("  help user     -> user commands", theme_text); print_newline();
+        print_newline();
 
+    } else if (str_compare(input_buffer, "help basic")) {
+        print_newline();
+        print_string("  Basic Commands:", theme_prompt); print_newline();
+        print_string("  ----------------------------------------", 0x07); print_newline();
+        print_string("  help          show help topics", theme_text); print_newline();
+        print_string("  about         about this OS", theme_text); print_newline();
+        print_string("  clear         clear screen", theme_text); print_newline();
+        print_string("  reboot        restart OS", theme_text); print_newline();
+        print_string("  echo <text>   print text", theme_text); print_newline();
+        print_string("  color <n>     change color 1-5", theme_text); print_newline();
+        print_string("  theme <name>  dark/matrix/ocean/fire", theme_text); print_newline();
+        print_string("  clock         show live clock", theme_text); print_newline();
+        print_string("  calc <n> op <n> calculate math", theme_text); print_newline();
+        print_newline();
+
+    } else if (str_compare(input_buffer, "help files")) {
+        print_newline();
+        print_string("  File Commands:", theme_prompt); print_newline();
+        print_string("  ----------------------------------------", 0x07); print_newline();
+        print_string("  ls            list all files", theme_text); print_newline();
+        print_string("  create <n>    create a file", theme_text); print_newline();
+        print_string("  write <n> <t> write to file", theme_text); print_newline();
+        print_string("  read <n>      read a file", theme_text); print_newline();
+        print_string("  rm <n>        delete a file", theme_text); print_newline();
+        print_string("  append <n> <t>append to file", theme_text); print_newline();
+        print_string("  rename <o> <n>rename a file", theme_text); print_newline();
+        print_string("  edit <name>   open text editor", theme_text); print_newline();
+        print_newline();
+
+    } else if (str_compare(input_buffer, "help system")) {
+        print_newline();
+        print_string("  System Commands:", theme_prompt); print_newline();
+        print_string("  ----------------------------------------", 0x07); print_newline();
+        print_string("  meminfo       memory layout", theme_text); print_newline();
+        print_string("  version       OS version", theme_text); print_newline();
+        print_string("  uptime        seconds running", theme_text); print_newline();
+        print_string("  sysinfo       full system info", theme_text); print_newline();
+        print_string("  settings      show OS settings", theme_text); print_newline();
+        print_newline();
+
+    } else if (str_compare(input_buffer, "help process")) {
+        print_newline();
+        print_string("  Process Commands:", theme_prompt); print_newline();
+        print_string("  ----------------------------------------", 0x07); print_newline();
+        print_string("  ps            list processes", theme_text); print_newline();
+        print_string("  spawn <name>  create process", theme_text); print_newline();
+        print_string("  kill <pid>    kill process", theme_text); print_newline();
+        print_newline();
+
+    } else if (str_compare(input_buffer, "help fun")) {
+        print_newline();
+        print_string("  Fun Commands:", theme_prompt); print_newline();
+        print_string("  ----------------------------------------", 0x07); print_newline();
+        print_string("  snake         play snake game", theme_text); print_newline();
+        print_string("  art <text>    print ASCII art", theme_text); print_newline();
+        print_string("  clock         show live clock", theme_text); print_newline();
+        print_newline();
+
+    } else if (str_compare(input_buffer, "help user")) {
+        print_newline();
+        print_string("  User Commands:", theme_prompt); print_newline();
+        print_string("  ----------------------------------------", 0x07); print_newline();
+        print_string("  whoami        show current user", theme_text); print_newline();
+        print_string("  passwd <new>  change password", theme_text); print_newline();
+        print_string("  adduser <u> <p> add new user", theme_text); print_newline();
+        print_string("  users         list all users", theme_text); print_newline();
+        print_newline();
     } else if (str_compare(input_buffer, "clear")) {
         clear_screen();
         print_string("DeepithOS v0.1", theme_accent);
@@ -574,6 +623,12 @@ void execute_command() {
         print_newline();
         print_string("> ", theme_prompt);
 
+    } else if (str_starts_with(input_buffer, "art ")) {
+        char *text = input_buffer + 4;
+        print_newline();
+        art_print(text, theme_accent);
+        print_newline();
+
     } else if (input_buffer[0] == 0) {
         // empty
 
@@ -605,7 +660,7 @@ void shell_handle_key(char c) {
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
             "rename", "ps", "spawn", "kill", "sysinfo", "calc", 
-            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", "clock", 0
+            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", "clock", "art", 0
         };
         int i = 0;
         while (commands[i]) {

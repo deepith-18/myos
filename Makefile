@@ -6,7 +6,7 @@ LD = ld
 LDFLAGS = -m elf_i386 -T linker.ld --oformat binary
 
 OBJS = kernel_entry.o kernel.o keyboard.o shell.o idt.o idt_c.o pic.o \
-       timer.o memory.o fs.o process.o sysinfo.o snake.o editor.o users.o clock.o
+       timer.o memory.o fs.o process.o sysinfo.o snake.o editor.o users.o clock.o art.o
 
 all: os.bin
 
@@ -60,6 +60,9 @@ users.o: users.c
 
 clock.o: clock.c
 	$(CC) $(CFLAGS) clock.c -o clock.o
+
+art.o: art.c
+	$(CC) $(CFLAGS) art.c -o art.o
 
 kernel.bin: $(OBJS)
 	$(LD) $(LDFLAGS) -o kernel.bin $(OBJS)
