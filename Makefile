@@ -6,7 +6,7 @@ LD = ld
 LDFLAGS = -m elf_i386 -T linker.ld --oformat binary
 
 OBJS = kernel_entry.o kernel.o keyboard.o shell.o idt.o idt_c.o pic.o \
-       timer.o memory.o fs.o process.o sysinfo.o snake.o editor.o users.o clock.o art.o
+       timer.o memory.o fs.o process.o sysinfo.o snake.o editor.o users.o clock.o art.o top.o
 
 all: os.bin
 
@@ -75,5 +75,8 @@ run: os.bin
 
 clean:
 	rm -f *.o *.bin
+
+top.o: top.c
+	$(CC) $(CFLAGS) top.c -o top.o
 
 .PHONY: all run clean

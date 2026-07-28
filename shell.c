@@ -1,3 +1,4 @@
+void top_run();
 void art_print(char *text, unsigned char color);
 void clock_run();
 void users_list_all();
@@ -158,11 +159,12 @@ if (str_compare(input_buffer, "help")) {
         print_newline();
         print_string("  System Commands:", theme_prompt); print_newline();
         print_string("  ----------------------------------------", 0x07); print_newline();
-        print_string("  meminfo       memory layout", theme_text); print_newline();
-        print_string("  version       OS version", theme_text); print_newline();
-        print_string("  uptime        seconds running", theme_text); print_newline();
-        print_string("  sysinfo       full system info", theme_text); print_newline();
-        print_string("  settings      show OS settings", theme_text); print_newline();
+        print_string("  meminfo        memory layout", theme_text); print_newline();
+        print_string("  version        OS version", theme_text); print_newline();
+        print_string("  uptime         seconds running", theme_text); print_newline();
+        print_string("  sysinfo        full system info", theme_text); print_newline();
+        print_string("  settings       show OS settings", theme_text); print_newline();
+        print_string("  top            live system monitor", theme_text); print_newline();
         print_newline();
 
     } else if (str_compare(input_buffer, "help process")) {
@@ -629,6 +631,24 @@ if (str_compare(input_buffer, "help")) {
         art_print(text, theme_accent);
         print_newline();
 
+    } else if (str_compare(input_buffer, "top")) {
+        top_run();
+        clear_screen();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string("         Welcome to DeepithOS v0.1 - Built by Deepith                          ", 0x0B);
+        print_newline();
+        print_string("         x86 32-bit Protected Mode Kernel                                      ", 0x0A);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_string(" Type 'help' to see all commands", 0x0E);
+        print_newline();
+        print_string("================================================================================", 0x08);
+        print_newline();
+        print_newline();
+        print_string("> ", theme_prompt);
+
     } else if (input_buffer[0] == 0) {
         // empty
 
@@ -660,7 +680,7 @@ void shell_handle_key(char c) {
             "color", "meminfo", "version", "uptime", "ls",
             "create", "write", "read", "rm", "append",
             "rename", "ps", "spawn", "kill", "sysinfo", "calc", 
-            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", "clock", "art", 0
+            "snake", "edit", "theme", "whoami", "settings", "passwd", "adduser", "clock", "art", "top", 0
         };
         int i = 0;
         while (commands[i]) {
